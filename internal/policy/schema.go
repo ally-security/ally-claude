@@ -8,21 +8,21 @@ type Config struct {
 	Name string `yaml:"name,omitempty"`
 
 	// Inference provider
-	InferenceProvider             string            `yaml:"inferenceProvider"`
-	InferenceCustomHeaders        map[string]string `yaml:"inferenceCustomHeaders,omitempty"`
-	InferenceAnthropicApiKey      string            `yaml:"inferenceAnthropicApiKey,omitempty"`
-	InferenceCredentialHelper     string            `yaml:"inferenceCredentialHelper,omitempty"`
-	InferenceCredentialHelperTTL  int               `yaml:"inferenceCredentialHelperTtlSec,omitempty"`
+	InferenceProvider            string            `yaml:"inferenceProvider"`
+	InferenceCustomHeaders       map[string]string `yaml:"inferenceCustomHeaders,omitempty"`
+	InferenceAnthropicApiKey     string            `yaml:"inferenceAnthropicApiKey,omitempty"`
+	InferenceCredentialHelper    string            `yaml:"inferenceCredentialHelper,omitempty"`
+	InferenceCredentialHelperTTL int               `yaml:"inferenceCredentialHelperTtlSec,omitempty"`
 
 	// Bedrock-specific. Use exactly one auth path: bearer token, named
 	// profile, SSO, or inferenceCredentialHelper above.
-	InferenceBedrockRegion        string `yaml:"inferenceBedrockRegion,omitempty"`
-	InferenceBedrockBearerToken   string `yaml:"inferenceBedrockBearerToken,omitempty"`
-	InferenceBedrockProfile       string `yaml:"inferenceBedrockProfile,omitempty"`
-	InferenceBedrockSsoStartUrl   string `yaml:"inferenceBedrockSsoStartUrl,omitempty"`
-	InferenceBedrockSsoRegion     string `yaml:"inferenceBedrockSsoRegion,omitempty"`
-	InferenceBedrockSsoAccountId  string `yaml:"inferenceBedrockSsoAccountId,omitempty"`
-	InferenceBedrockSsoRoleName   string `yaml:"inferenceBedrockSsoRoleName,omitempty"`
+	InferenceBedrockRegion       string `yaml:"inferenceBedrockRegion,omitempty"`
+	InferenceBedrockBearerToken  string `yaml:"inferenceBedrockBearerToken,omitempty"`
+	InferenceBedrockProfile      string `yaml:"inferenceBedrockProfile,omitempty"`
+	InferenceBedrockSsoStartUrl  string `yaml:"inferenceBedrockSsoStartUrl,omitempty"`
+	InferenceBedrockSsoRegion    string `yaml:"inferenceBedrockSsoRegion,omitempty"`
+	InferenceBedrockSsoAccountId string `yaml:"inferenceBedrockSsoAccountId,omitempty"`
+	InferenceBedrockSsoRoleName  string `yaml:"inferenceBedrockSsoRoleName,omitempty"`
 
 	// Models
 	ModelDiscoveryEnabled *bool         `yaml:"modelDiscoveryEnabled,omitempty"`
@@ -35,10 +35,10 @@ type Config struct {
 	BuiltinToolPolicy        map[string]string `yaml:"builtinToolPolicy,omitempty"`
 
 	// Telemetry / lifecycle
-	DeploymentOrganizationUUID  string `yaml:"deploymentOrganizationUuid,omitempty"`
-	DisableEssentialTelemetry   *bool  `yaml:"disableEssentialTelemetry,omitempty"`
-	DisableNonessentialTelemetry *bool `yaml:"disableNonessentialTelemetry,omitempty"`
-	DisableAutoUpdates          *bool  `yaml:"disableAutoUpdates,omitempty"`
+	DeploymentOrganizationUUID   string `yaml:"deploymentOrganizationUuid,omitempty"`
+	DisableEssentialTelemetry    *bool  `yaml:"disableEssentialTelemetry,omitempty"`
+	DisableNonessentialTelemetry *bool  `yaml:"disableNonessentialTelemetry,omitempty"`
+	DisableAutoUpdates           *bool  `yaml:"disableAutoUpdates,omitempty"`
 
 	// OTLP
 	OTLPEndpoint string            `yaml:"otlpEndpoint,omitempty"`
@@ -60,13 +60,13 @@ type Config struct {
 
 // Connector mirrors a managedMcpServers entry.
 type Connector struct {
-	Name       string            `yaml:"name" json:"name"`
-	URL        string            `yaml:"url,omitempty" json:"url,omitempty"`
-	Transport  string            `yaml:"transport,omitempty" json:"transport,omitempty"`
-	Headers    map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
-	HeadersHelper string         `yaml:"headersHelper,omitempty" json:"headersHelper,omitempty"`
-	OAuth      interface{}       `yaml:"oauth,omitempty" json:"oauth,omitempty"`
-	ToolPolicy map[string]string `yaml:"toolPolicy,omitempty" json:"toolPolicy,omitempty"`
+	Name          string            `yaml:"name" json:"name"`
+	URL           string            `yaml:"url,omitempty" json:"url,omitempty"`
+	Transport     string            `yaml:"transport,omitempty" json:"transport,omitempty"`
+	Headers       map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
+	HeadersHelper string            `yaml:"headersHelper,omitempty" json:"headersHelper,omitempty"`
+	OAuth         interface{}       `yaml:"oauth,omitempty" json:"oauth,omitempty"`
+	ToolPolicy    map[string]string `yaml:"toolPolicy,omitempty" json:"toolPolicy,omitempty"`
 
 	// stdio transport
 	Command string            `yaml:"command,omitempty" json:"command,omitempty"`

@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { goos: darwin,  goarch: amd64, suffix: "" }
+          - { goos: darwin,  goarch: arm64, suffix: "" }
+          - { goos: windows, goarch: amd64, suffix: ".exe" }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          mkdir -p dist
+          name="claude-3p-helper-${GITHUB_REF_NAME}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}"
+          go build \
+            -trimpath \
+            -ldflags "-s -w -X github.com/anthropics/claude-3p-helper/internal/version.Version=${GITHUB_REF_NAME} -X github.com/anthropics/claude-3p-helper/internal/version.Commit=${GITHUB_SHA}" \
+            -o "dist/${name}" \
+            ./cmd/claude-3p-helper
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: claude-3p-helper-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: checksums
+        working-directory: dist
+        run: sha256sum claude-3p-helper-* > SHA256SUMS
+
+      - name: publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            dist/*

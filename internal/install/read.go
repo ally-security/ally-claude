@@ -11,12 +11,12 @@ import (
 
 // LoadedConfig holds the parsed contents of a configLibrary/<id>.json.
 type LoadedConfig struct {
-	ID                string
-	Provider          string
-	BedrockRegion     string
-	Path              string
-	InferenceModels   []interface{}
-	Raw               map[string]interface{}
+	ID              string
+	Provider        string
+	BedrockRegion   string
+	Path            string
+	InferenceModels []interface{}
+	Raw             map[string]interface{}
 }
 
 // ActiveID returns the activeConfigId from _meta.json, or "" if none is set.

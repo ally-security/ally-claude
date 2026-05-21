@@ -14,10 +14,10 @@ type Options struct {
 }
 
 type Plan struct {
-	cfg       *policy.Config
-	paths     Paths
-	doc       map[string]interface{}
-	activate  bool
+	cfg      *policy.Config
+	paths    Paths
+	doc      map[string]interface{}
+	activate bool
 }
 
 func New(c *policy.Config, opts Options) (*Plan, error) {
