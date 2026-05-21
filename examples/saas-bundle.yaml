@@ -67,42 +67,46 @@ connectors:
       scope: "crm.objects.contacts.read crm.objects.deals.read"
       callbackPort: 53284
 
-  # Slack — no official hosted MCP server (May 2026). Two realistic
-  # paths: (a) run a community server like korotovsky/slack-mcp-server
-  # locally via stdio (shown below), or (b) use Claude's built-in
-  # Slack connector via claude.ai/connectors, which is outside this
-  # 3p config surface.
+  # Slack — official MCP server (listed at claude.ai/connectors).
+  # Verified via /.well-known/oauth-authorization-server: Slack does NOT
+  # expose a registration_endpoint, so RFC 7591 DCR is unsupported.
+  # Create a Slack app at api.slack.com/apps, add the redirect URI
+  # http://127.0.0.1:53287/callback (matching callbackPort below), and
+  # paste the client id here.
   - name: slack
-    transport: stdio
-    command: npx
-    args: ["-y", "slack-mcp-server@latest"]
-    env:
-      SLACK_MCP_XOXP_TOKEN: REPLACE_ME   # user OAuth token (xoxp-...)
+    url: https://mcp.slack.com/mcp
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "channels:read chat:write search:read"
+      callbackPort: 53287
     toolPolicy:
       slack_send_message: ask
+      slack_create_canvas: ask
 
-  # Google Drive — no official Google-hosted MCP (May 2026). Community
-  # option: taylorwilsdon/google_workspace_mcp, run via stdio. Requires
-  # a Google Cloud OAuth client (pre-registered) — Google does not
-  # support OAuth dynamic client registration.
+  # Google Drive — official Google-hosted MCP.
+  # Source: https://developers.google.com/workspace/guides/configure-mcp-servers
+  # Google requires a pre-registered OAuth 2.0 client (Web application
+  # type) created in Google Cloud Console. Add the redirect URI matching
+  # callbackPort below before first auth.
   - name: google-drive
-    transport: stdio
-    command: uvx
-    args: ["workspace-mcp", "--tools", "drive"]
-    env:
-      GOOGLE_OAUTH_CLIENT_ID: REPLACE_ME
-      GOOGLE_OAUTH_CLIENT_SECRET: REPLACE_ME
+    url: https://drivemcp.googleapis.com/mcp/v1
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "https://www.googleapis.com/auth/drive.readonly"
+      callbackPort: 53285
     toolPolicy:
       delete_file: ask
 
-  # Gmail — same as Drive, different toolset on the same community server.
+  # Gmail — official Google-hosted MCP. Same OAuth requirements as Drive.
   - name: gmail
-    transport: stdio
-    command: uvx
-    args: ["workspace-mcp", "--tools", "gmail"]
-    env:
-      GOOGLE_OAUTH_CLIENT_ID: REPLACE_ME
-      GOOGLE_OAUTH_CLIENT_SECRET: REPLACE_ME
+    url: https://gmailmcp.googleapis.com/mcp/v1
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "https://www.googleapis.com/auth/gmail.modify"
+      callbackPort: 53286
     toolPolicy:
       send_message: ask
 
