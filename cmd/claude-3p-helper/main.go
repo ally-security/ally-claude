@@ -13,31 +13,41 @@ import (
 	"github.com/anthropics/claude-3p-helper/internal/version"
 )
 
-func main() {
-	if len(os.Args) < 2 {
+func main() { os.Exit(dispatch(os.Args[1:])) }
+
+// dispatch is main's body, factored out for testability. Returns the
+// process exit code.
+func dispatch(args []string) int {
+	if len(args) < 1 {
 		usage()
-		os.Exit(2)
+		return 2
 	}
-	switch os.Args[1] {
+	switch args[0] {
 	case "sync":
-		if err := runSync(os.Args[2:]); err != nil {
+		if err := runSync(args[1:]); err != nil {
 			slog.Error("sync failed", "err", err)
-			os.Exit(1)
+			return 1
 		}
 	case "models":
-		if err := runModels(os.Args[2:]); err != nil {
+		if err := runModels(args[1:]); err != nil {
 			slog.Error("models failed", "err", err)
-			os.Exit(1)
+			return 1
+		}
+	case "self-update":
+		if err := runSelfUpdate(args[1:]); err != nil {
+			slog.Error("self-update failed", "err", err)
+			return 1
 		}
 	case "version", "--version", "-v":
 		fmt.Println(version.String())
 	case "help", "--help", "-h":
 		usage()
 	default:
-		fmt.Fprintln(os.Stderr, "unknown command:", os.Args[1])
+		fmt.Fprintln(os.Stderr, "unknown command:", args[0])
 		usage()
-		os.Exit(2)
+		return 2
 	}
+	return 0
 }
 
 func usage() {
@@ -46,6 +56,7 @@ func usage() {
 Usage:
   claude-3p-helper sync [flags] <user>/<repo>/<path>
   claude-3p-helper models [flags]
+  claude-3p-helper self-update [flags]
   claude-3p-helper version
 
 Sync flags:
@@ -57,6 +68,10 @@ Sync flags:
 Models flags:
   --config string   inspect a specific configLibrary id (default: active)
   --all             list all synced configs and their declared models
+  --verbose         emit debug-level logs to stderr
+
+Self-update flags:
+  --check           check for updates without replacing the binary
   --verbose         emit debug-level logs to stderr`)
 }
 
