@@ -1,0 +1,57 @@
+# Bedrock-backed policy. Same connector bundle as saas-bundle.yaml but
+# routes inference through Amazon Bedrock using a bearer token (the
+# "API key" issued from the Bedrock console — colloquially a session
+# token).
+#
+# Alternative auth paths supported by 3p (use exactly one):
+#   inferenceBedrockBearerToken   ← shown below
+#   inferenceBedrockProfile       ← named AWS profile from ~/.aws/credentials
+#   inferenceBedrockSso*          ← interactive AWS SSO
+#   inferenceCredentialHelper     ← executable that prints a token to stdout
+#                                   (use this for STS-issued temporary
+#                                    credentials with rotating session tokens)
+
+id: bedrock-baseline-2026-05
+name: "Bedrock Baseline (us-west-2)"
+
+inferenceProvider: bedrock
+deploymentOrganizationUuid: 00000000-0000-0000-0000-000000000000
+
+inferenceBedrockRegion: us-west-2
+inferenceBedrockBearerToken: REPLACE_ME
+
+# When using a bearer token, Bedrock auto-discovers models. Set
+# modelDiscoveryEnabled: false and pin inferenceModels if you need an
+# allowlist instead.
+modelDiscoveryEnabled: true
+
+inferenceModels:
+  - name: us.anthropic.claude-opus-4-7-20260101-v1:0
+    supports1m: true
+  - name: us.anthropic.claude-sonnet-4-6-20251001-v1:0
+  - name: arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/abc123
+    labelOverride: "Claude Opus (Prod)"
+
+# Same connectors as the main bundle. See examples/saas-bundle.yaml for
+# the per-vendor notes.
+isLocalDevMcpEnabled: false
+isDesktopExtensionEnabled: true
+
+connectors:
+  - name: notion
+    url: https://mcp.notion.com/mcp
+    transport: http
+    oauth: true
+
+  - name: linear
+    url: https://mcp.linear.app/mcp
+    transport: http
+    oauth: true
+
+  - name: slack
+    url: https://mcp.slack.com/mcp
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "channels:read chat:write search:read"
+      callbackPort: 53287

@@ -48,6 +48,13 @@ func buildConfigDoc(c *policy.Config) map[string]interface{} {
 	if c.InferenceCredentialHelperTTL > 0 {
 		doc["inferenceCredentialHelperTtlSec"] = c.InferenceCredentialHelperTTL
 	}
+	putStr("inferenceBedrockRegion", c.InferenceBedrockRegion)
+	putStr("inferenceBedrockBearerToken", c.InferenceBedrockBearerToken)
+	putStr("inferenceBedrockProfile", c.InferenceBedrockProfile)
+	putStr("inferenceBedrockSsoStartUrl", c.InferenceBedrockSsoStartUrl)
+	putStr("inferenceBedrockSsoRegion", c.InferenceBedrockSsoRegion)
+	putStr("inferenceBedrockSsoAccountId", c.InferenceBedrockSsoAccountId)
+	putStr("inferenceBedrockSsoRoleName", c.InferenceBedrockSsoRoleName)
 	put("modelDiscoveryEnabled", boolPtr(c.ModelDiscoveryEnabled))
 	if len(c.InferenceModels) > 0 {
 		doc["inferenceModels"] = c.InferenceModels

@@ -14,6 +14,16 @@ type Config struct {
 	InferenceCredentialHelper     string            `yaml:"inferenceCredentialHelper,omitempty"`
 	InferenceCredentialHelperTTL  int               `yaml:"inferenceCredentialHelperTtlSec,omitempty"`
 
+	// Bedrock-specific. Use exactly one auth path: bearer token, named
+	// profile, SSO, or inferenceCredentialHelper above.
+	InferenceBedrockRegion        string `yaml:"inferenceBedrockRegion,omitempty"`
+	InferenceBedrockBearerToken   string `yaml:"inferenceBedrockBearerToken,omitempty"`
+	InferenceBedrockProfile       string `yaml:"inferenceBedrockProfile,omitempty"`
+	InferenceBedrockSsoStartUrl   string `yaml:"inferenceBedrockSsoStartUrl,omitempty"`
+	InferenceBedrockSsoRegion     string `yaml:"inferenceBedrockSsoRegion,omitempty"`
+	InferenceBedrockSsoAccountId  string `yaml:"inferenceBedrockSsoAccountId,omitempty"`
+	InferenceBedrockSsoRoleName   string `yaml:"inferenceBedrockSsoRoleName,omitempty"`
+
 	// Models
 	ModelDiscoveryEnabled *bool         `yaml:"modelDiscoveryEnabled,omitempty"`
 	InferenceModels       []interface{} `yaml:"inferenceModels,omitempty"`

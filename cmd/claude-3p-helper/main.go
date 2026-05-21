@@ -22,6 +22,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, "sync:", err)
 			os.Exit(1)
 		}
+	case "models":
+		if err := runModels(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, "models:", err)
+			os.Exit(1)
+		}
 	case "version", "--version", "-v":
 		fmt.Println(version.String())
 	case "help", "--help", "-h":
@@ -38,12 +43,17 @@ func usage() {
 
 Usage:
   claude-3p-helper sync [flags] <user>/<repo>/<path>
+  claude-3p-helper models [flags]
   claude-3p-helper version
 
 Sync flags:
   --branch string   git branch when fetching from GitHub (default "main")
   --dry-run         print planned actions, don't write
-  --no-activate     don't mark the synced config as active`)
+  --no-activate     don't mark the synced config as active
+
+Models flags:
+  --config string   inspect a specific configLibrary id (default: active)
+  --all             list all synced configs and their declared models`)
 }
 
 func runSync(args []string) error {
