@@ -3,9 +3,9 @@
 #
 #   claude-3p-helper sync your-org/claude-policy/examples/saas-bundle.yaml
 #
-# Connector URLs and oauth clientIds below are illustrative — replace each
-# with the actual values from the vendor's MCP integration docs (or your
-# own proxy, if you front them through one).
+# Vendor-by-vendor notes are inline. URLs/transports were verified against
+# each vendor's public MCP docs (May 2026). Replace any REPLACE_ME values
+# with credentials issued to your org.
 
 id: saas-baseline-2026-05
 name: "SaaS Baseline (Notion / PostHog / Linear / HubSpot / GDrive / Gmail / Slack)"
@@ -16,45 +16,49 @@ inferenceProvider: anthropic
 deploymentOrganizationUuid: 00000000-0000-0000-0000-000000000000
 
 # Block ad-hoc local MCP servers so only the connectors in this file are
-# usable. Drop or flip to true if you want users to add their own.
+# usable. Managed servers below (including stdio entries) are unaffected
+# by this flag — it only blocks user-added MCPs from the in-app UI.
 isLocalDevMcpEnabled: false
 isDesktopExtensionEnabled: true
 
 connectors:
+  # Notion — official hosted MCP server, streamable HTTP, OAuth.
+  # Source: https://developers.notion.com/docs/get-started-with-mcp
+  # `oauth: true` enables RFC 7591 dynamic client registration so each
+  # workstation registers its own client on first auth.
   - name: notion
     url: https://mcp.notion.com/mcp
     transport: http
-    oauth:
-      clientId: REPLACE_ME
-      scope: "read write"
-      callbackPort: 53281
+    oauth: true
     toolPolicy:
       create_pages: allow
       update_page: allow
       delete_pages: ask
 
+  # PostHog — official hosted MCP, auto-routes to US/EU based on account.
+  # Source: https://posthog.com/docs/model-context-protocol
   - name: posthog
     url: https://mcp.posthog.com/mcp
     transport: http
-    oauth:
-      clientId: REPLACE_ME
-      scope: "read"
-      callbackPort: 53282
+    oauth: true
     toolPolicy:
       query_run: allow
       experiment_delete: ask
 
+  # Linear — official hosted MCP. Docs explicitly state OAuth 2.1 with
+  # dynamic client registration. Source: https://linear.app/docs/mcp
   - name: linear
-    url: https://mcp.linear.app/sse
-    transport: sse
-    oauth:
-      clientId: REPLACE_ME
-      scope: "read write"
-      callbackPort: 53283
+    url: https://mcp.linear.app/mcp
+    transport: http
+    oauth: true
     toolPolicy:
       save_issue: allow
       delete_comment: ask
 
+  # HubSpot — official hosted MCP. Unlike the others, HubSpot requires a
+  # pre-registered OAuth app: create one in the HubSpot developer portal
+  # with the read scopes you need, then paste the client id below.
+  # Source: https://developers.hubspot.com/mcp
   - name: hubspot
     url: https://mcp.hubspot.com/mcp
     transport: http
@@ -63,36 +67,44 @@ connectors:
       scope: "crm.objects.contacts.read crm.objects.deals.read"
       callbackPort: 53284
 
+  # Slack — no official hosted MCP server (May 2026). Two realistic
+  # paths: (a) run a community server like korotovsky/slack-mcp-server
+  # locally via stdio (shown below), or (b) use Claude's built-in
+  # Slack connector via claude.ai/connectors, which is outside this
+  # 3p config surface.
+  - name: slack
+    transport: stdio
+    command: npx
+    args: ["-y", "slack-mcp-server@latest"]
+    env:
+      SLACK_MCP_XOXP_TOKEN: REPLACE_ME   # user OAuth token (xoxp-...)
+    toolPolicy:
+      slack_send_message: ask
+
+  # Google Drive — no official Google-hosted MCP (May 2026). Community
+  # option: taylorwilsdon/google_workspace_mcp, run via stdio. Requires
+  # a Google Cloud OAuth client (pre-registered) — Google does not
+  # support OAuth dynamic client registration.
   - name: google-drive
-    url: https://mcp.googleapis.com/drive
-    transport: http
-    oauth:
-      clientId: REPLACE_ME
-      scope: "https://www.googleapis.com/auth/drive.readonly"
-      callbackPort: 53285
+    transport: stdio
+    command: uvx
+    args: ["workspace-mcp", "--tools", "drive"]
+    env:
+      GOOGLE_OAUTH_CLIENT_ID: REPLACE_ME
+      GOOGLE_OAUTH_CLIENT_SECRET: REPLACE_ME
     toolPolicy:
       delete_file: ask
 
+  # Gmail — same as Drive, different toolset on the same community server.
   - name: gmail
-    url: https://mcp.googleapis.com/gmail
-    transport: http
-    oauth:
-      clientId: REPLACE_ME
-      scope: "https://www.googleapis.com/auth/gmail.modify"
-      callbackPort: 53286
+    transport: stdio
+    command: uvx
+    args: ["workspace-mcp", "--tools", "gmail"]
+    env:
+      GOOGLE_OAUTH_CLIENT_ID: REPLACE_ME
+      GOOGLE_OAUTH_CLIENT_SECRET: REPLACE_ME
     toolPolicy:
       send_message: ask
-
-  - name: slack
-    url: https://mcp.slack.com/mcp
-    transport: http
-    oauth:
-      clientId: REPLACE_ME
-      scope: "channels:read chat:write search:read"
-      callbackPort: 53287
-    toolPolicy:
-      slack_send_message: ask
-      slack_create_canvas: ask
 
 # Optional: per-server tool policy overrides at the org level. Useful when
 # you want to layer additional approvals beyond what the connector ships.
