@@ -1,18 +1,19 @@
-# Bedrock-backed policy. Same connector bundle as saas-bundle.yaml but
-# routes inference through Amazon Bedrock using a bearer token (the
-# "API key" issued from the Bedrock console — colloquially a session
-# token).
+# Full SaaS bundle backed by Amazon Bedrock inference.
 #
-# Alternative auth paths supported by 3p (use exactly one):
-#   inferenceBedrockBearerToken   ← shown below
+# Same connectors as examples/saas-bundle.yaml — Notion, PostHog, Linear,
+# HubSpot, Google Drive, Gmail, Slack — plus a multi-model Bedrock
+# inference inventory with friendly labels.
+#
+# Alternative Bedrock auth paths (use exactly one):
+#   inferenceBedrockBearerToken   ← shown below (Bedrock console API key)
 #   inferenceBedrockProfile       ← named AWS profile from ~/.aws/credentials
 #   inferenceBedrockSso*          ← interactive AWS SSO
 #   inferenceCredentialHelper     ← executable that prints a token to stdout
 #                                   (use this for STS-issued temporary
 #                                    credentials with rotating session tokens)
 
-id: bedrock-baseline-2026-05
-name: "Bedrock Baseline (us-west-2)"
+id: bedrock-saas-2026-05
+name: "Bedrock SaaS Bundle (us-west-2)"
 
 inferenceProvider: bedrock
 deploymentOrganizationUuid: 00000000-0000-0000-0000-000000000000
@@ -20,20 +21,57 @@ deploymentOrganizationUuid: 00000000-0000-0000-0000-000000000000
 inferenceBedrockRegion: us-west-2
 inferenceBedrockBearerToken: REPLACE_ME
 
-# When using a bearer token, Bedrock auto-discovers models. Set
-# modelDiscoveryEnabled: false and pin inferenceModels if you need an
-# allowlist instead.
-modelDiscoveryEnabled: true
+# Pin the model list rather than relying on auto-discovery so users see
+# only the inference profiles your org has approved.
+modelDiscoveryEnabled: false
 
+# First entry becomes the default in the picker. Mix of public
+# inference-profile IDs (auto-labelled by the app) and account-specific
+# application-inference-profile / provisioned-throughput ARNs (labelled
+# explicitly so they read nicely in the UI).
 inferenceModels:
+  # ── Frontier (4.x family) ───────────────────────────────────────────
   - name: us.anthropic.claude-opus-4-7-20260101-v1:0
+    labelOverride: "Claude Opus 4.7"
     supports1m: true
-  - name: us.anthropic.claude-sonnet-4-6-20251001-v1:0
-  - name: arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/abc123
-    labelOverride: "Claude Opus (Prod)"
 
-# Same connectors as the main bundle. See examples/saas-bundle.yaml for
-# the per-vendor notes.
+  - name: us.anthropic.claude-sonnet-4-6-20251001-v1:0
+    labelOverride: "Claude Sonnet 4.6"
+    supports1m: true
+
+  - name: us.anthropic.claude-haiku-4-5-20251001-v1:0
+    labelOverride: "Claude Haiku 4.5 (fast)"
+
+  # ── Previous generation, kept for cost/compat ───────────────────────
+  - name: us.anthropic.claude-opus-4-20250514-v1:0
+    labelOverride: "Claude Opus 4 (legacy)"
+
+  - name: us.anthropic.claude-sonnet-4-20250514-v1:0
+    labelOverride: "Claude Sonnet 4 (legacy)"
+
+  # ── EU residency profile for EU-data workflows ──────────────────────
+  - name: eu.anthropic.claude-sonnet-4-6-20251001-v1:0
+    labelOverride: "Claude Sonnet 4.6 (EU)"
+
+  # ── Org-specific application inference profiles ─────────────────────
+  # These ARNs route to per-team quotas, guardrails, or cost-tracking
+  # tags configured in your Bedrock account.
+  - name: arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/prod-opus
+    labelOverride: "Opus — Production (tagged for finance)"
+
+  - name: arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/staging-sonnet
+    labelOverride: "Sonnet — Staging"
+
+  - name: arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/eval-haiku
+    labelOverride: "Haiku — Eval / Batch"
+
+  # ── Provisioned throughput (reserved capacity) ──────────────────────
+  - name: arn:aws:bedrock:us-west-2:123456789012:provisioned-model/abc123def456
+    labelOverride: "Opus — Reserved 100 TPS"
+
+# ── Connector bundle ──────────────────────────────────────────────────
+# Identical to examples/saas-bundle.yaml. See that file for per-vendor
+# notes (URLs, OAuth model, source citations).
 isLocalDevMcpEnabled: false
 isDesktopExtensionEnabled: true
 
@@ -42,11 +80,34 @@ connectors:
     url: https://mcp.notion.com/mcp
     transport: http
     oauth: true
+    toolPolicy:
+      create_pages: allow
+      update_page: allow
+      delete_pages: ask
+
+  - name: posthog
+    url: https://mcp.posthog.com/mcp
+    transport: http
+    oauth: true
+    toolPolicy:
+      query_run: allow
+      experiment_delete: ask
 
   - name: linear
     url: https://mcp.linear.app/mcp
     transport: http
     oauth: true
+    toolPolicy:
+      save_issue: allow
+      delete_comment: ask
+
+  - name: hubspot
+    url: https://mcp.hubspot.com/mcp
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "crm.objects.contacts.read crm.objects.deals.read"
+      callbackPort: 53284
 
   - name: slack
     url: https://mcp.slack.com/mcp
@@ -54,3 +115,26 @@ connectors:
     oauth:
       clientId: "1601185624273.8899143856786"
       callbackPort: 3118
+    toolPolicy:
+      slack_send_message: ask
+      slack_create_canvas: ask
+
+  - name: google-drive
+    url: https://drivemcp.googleapis.com/mcp/v1
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "https://www.googleapis.com/auth/drive.readonly"
+      callbackPort: 53285
+    toolPolicy:
+      delete_file: ask
+
+  - name: gmail
+    url: https://gmailmcp.googleapis.com/mcp/v1
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "https://www.googleapis.com/auth/gmail.modify"
+      callbackPort: 53286
+    toolPolicy:
+      send_message: ask
