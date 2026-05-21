@@ -21,6 +21,12 @@ deploymentOrganizationUuid: 00000000-0000-0000-0000-000000000000
 isLocalDevMcpEnabled: false
 isDesktopExtensionEnabled: true
 
+# Note: toolPolicy is intentionally omitted from every connector below.
+# When unset, Claude-3p falls back to its default ("ask" — the user is
+# prompted on first use of each tool). Override per-connector with a
+# toolPolicy: { tool_name: allow | ask | blocked } block when you need
+# to auto-approve or deny specific tools.
+
 connectors:
   # Notion — official hosted MCP server, streamable HTTP, OAuth.
   # Source: https://developers.notion.com/docs/get-started-with-mcp
@@ -30,10 +36,6 @@ connectors:
     url: https://mcp.notion.com/mcp
     transport: http
     oauth: true
-    toolPolicy:
-      create_pages: allow
-      update_page: allow
-      delete_pages: ask
 
   # PostHog — official hosted MCP, auto-routes to US/EU based on account.
   # Source: https://posthog.com/docs/model-context-protocol
@@ -41,9 +43,6 @@ connectors:
     url: https://mcp.posthog.com/mcp
     transport: http
     oauth: true
-    toolPolicy:
-      query_run: allow
-      experiment_delete: ask
 
   # Linear — official hosted MCP. Docs explicitly state OAuth 2.1 with
   # dynamic client registration. Source: https://linear.app/docs/mcp
@@ -51,9 +50,6 @@ connectors:
     url: https://mcp.linear.app/mcp
     transport: http
     oauth: true
-    toolPolicy:
-      save_issue: allow
-      delete_comment: ask
 
   # HubSpot — official hosted MCP. Unlike the others, HubSpot requires a
   # pre-registered OAuth app: create one in the HubSpot developer portal
@@ -79,9 +75,6 @@ connectors:
     oauth:
       clientId: "1601185624273.8899143856786"
       callbackPort: 3118
-    toolPolicy:
-      slack_send_message: ask
-      slack_create_canvas: ask
 
   # Google Drive — official Google-hosted MCP.
   # Source: https://developers.google.com/workspace/guides/configure-mcp-servers
@@ -95,8 +88,6 @@ connectors:
       clientId: REPLACE_ME
       scope: "https://www.googleapis.com/auth/drive.readonly"
       callbackPort: 53285
-    toolPolicy:
-      delete_file: ask
 
   # Gmail — official Google-hosted MCP. Same OAuth requirements as Drive.
   - name: gmail
@@ -106,15 +97,14 @@ connectors:
       clientId: REPLACE_ME
       scope: "https://www.googleapis.com/auth/gmail.modify"
       callbackPort: 53286
-    toolPolicy:
-      send_message: ask
 
-# Optional: per-server tool policy overrides at the org level. Useful when
-# you want to layer additional approvals beyond what the connector ships.
-orgPluginSettings:
-  slack:
-    toolPolicy:
-      slack_delete_message: blocked
+# Optional: per-server tool policy overrides at the org level. Layer on
+# top of (or in addition to) per-connector toolPolicy. Example:
+#
+# orgPluginSettings:
+#   slack:
+#     toolPolicy:
+#       slack_delete_message: blocked
 
 # Optional plugin/extension bundles fetched and dropped into the local
 # Claude-3p directories. Uncomment and replace with your own artifacts.

@@ -75,31 +75,25 @@ inferenceModels:
 isLocalDevMcpEnabled: false
 isDesktopExtensionEnabled: true
 
+# toolPolicy is intentionally omitted on every connector — Claude-3p
+# defaults to "ask" (prompt on first use). Add a per-connector
+# toolPolicy: { tool: allow | ask | blocked } when you need to override.
+
 connectors:
   - name: notion
     url: https://mcp.notion.com/mcp
     transport: http
     oauth: true
-    toolPolicy:
-      create_pages: allow
-      update_page: allow
-      delete_pages: ask
 
   - name: posthog
     url: https://mcp.posthog.com/mcp
     transport: http
     oauth: true
-    toolPolicy:
-      query_run: allow
-      experiment_delete: ask
 
   - name: linear
     url: https://mcp.linear.app/mcp
     transport: http
     oauth: true
-    toolPolicy:
-      save_issue: allow
-      delete_comment: ask
 
   - name: hubspot
     url: https://mcp.hubspot.com/mcp
@@ -115,9 +109,6 @@ connectors:
     oauth:
       clientId: "1601185624273.8899143856786"
       callbackPort: 3118
-    toolPolicy:
-      slack_send_message: ask
-      slack_create_canvas: ask
 
   - name: google-drive
     url: https://drivemcp.googleapis.com/mcp/v1
@@ -126,8 +117,6 @@ connectors:
       clientId: REPLACE_ME
       scope: "https://www.googleapis.com/auth/drive.readonly"
       callbackPort: 53285
-    toolPolicy:
-      delete_file: ask
 
   - name: gmail
     url: https://gmailmcp.googleapis.com/mcp/v1
@@ -136,5 +125,3 @@ connectors:
       clientId: REPLACE_ME
       scope: "https://www.googleapis.com/auth/gmail.modify"
       callbackPort: 53286
-    toolPolicy:
-      send_message: ask
