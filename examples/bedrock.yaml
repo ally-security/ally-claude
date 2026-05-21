@@ -52,6 +52,5 @@ connectors:
     url: https://mcp.slack.com/mcp
     transport: http
     oauth:
-      clientId: REPLACE_ME
-      scope: "channels:read chat:write search:read"
-      callbackPort: 53287
+      clientId: "1601185624273.8899143856786"
+      callbackPort: 3118

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 
 	"github.com/anthropics/claude-3p-helper/internal/policy"
 )
@@ -72,23 +73,31 @@ func connectorEndpoint(c policy.Connector) string {
 
 // Apply writes the config doc and installs plugins/extensions.
 func (p *Plan) Apply() error {
+	slog.Debug("writing config", "id", p.cfg.ID, "dir", p.paths.ConfigLibrary, "keys", len(p.doc))
 	if err := writeConfig(p.paths.ConfigLibrary, p.cfg.ID, p.doc); err != nil {
 		return fmt.Errorf("write config: %w", err)
 	}
+	slog.Info("config written", "id", p.cfg.ID)
+
 	for _, b := range p.cfg.Plugins {
+		slog.Debug("installing plugin", "name", b.Name, "source", b.Source)
 		if err := installPlugin(p.paths.OrgPlugins, b); err != nil {
 			return fmt.Errorf("plugin %s: %w", b.Name, err)
 		}
+		slog.Info("plugin installed", "name", b.Name)
 	}
 	for _, b := range p.cfg.Extensions {
+		slog.Debug("installing extension", "name", b.Name, "source", b.Source)
 		if err := installExtension(p.paths.Extensions, b); err != nil {
 			return fmt.Errorf("extension %s: %w", b.Name, err)
 		}
+		slog.Info("extension installed", "name", b.Name)
 	}
 	if p.activate {
 		if err := activateConfig(p.paths.ConfigLibrary, p.cfg.ID); err != nil {
 			return fmt.Errorf("activate: %w", err)
 		}
+		slog.Info("config activated", "id", p.cfg.ID)
 	}
 	return nil
 }

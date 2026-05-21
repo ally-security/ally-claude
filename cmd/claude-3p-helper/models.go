@@ -3,16 +3,21 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/anthropics/claude-3p-helper/internal/install"
+	"github.com/anthropics/claude-3p-helper/internal/logging"
 )
 
 func runModels(args []string) error {
 	fs := flag.NewFlagSet("models", flag.ExitOnError)
 	configID := fs.String("config", "", "inspect a specific configLibrary id (default: active)")
 	all := fs.Bool("all", false, "list all synced configs and their declared models")
+	verbose := fs.Bool("verbose", false, "emit debug-level logs to stderr")
 	_ = fs.Parse(args)
+	logging.Setup(*verbose)
+	slog.Debug("models invoked", "configID", *configID, "all", *all)
 
 	if *all {
 		ids, err := install.ListConfigs()

@@ -67,19 +67,18 @@ connectors:
       scope: "crm.objects.contacts.read crm.objects.deals.read"
       callbackPort: 53284
 
-  # Slack — official MCP server (listed at claude.ai/connectors).
-  # Verified via /.well-known/oauth-authorization-server: Slack does NOT
-  # expose a registration_endpoint, so RFC 7591 DCR is unsupported.
-  # Create a Slack app at api.slack.com/apps, add the redirect URI
-  # http://127.0.0.1:53287/callback (matching callbackPort below), and
-  # paste the client id here.
+  # Slack — official MCP server. Slack does NOT support OAuth dynamic
+  # client registration (their /.well-known/oauth-authorization-server
+  # exposes no registration_endpoint), but they publish a public client
+  # id and callback port for use with their hosted MCP — so no Slack
+  # app registration is needed.
+  # Source: https://docs.slack.dev/ai/slack-mcp-server/connect-to-claude
   - name: slack
     url: https://mcp.slack.com/mcp
     transport: http
     oauth:
-      clientId: REPLACE_ME
-      scope: "channels:read chat:write search:read"
-      callbackPort: 53287
+      clientId: "1601185624273.8899143856786"
+      callbackPort: 3118
     toolPolicy:
       slack_send_message: ask
       slack_create_canvas: ask
