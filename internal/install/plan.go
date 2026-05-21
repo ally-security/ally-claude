@@ -74,30 +74,59 @@ func connectorEndpoint(c policy.Connector) string {
 // Apply writes the config doc and installs plugins/extensions.
 func (p *Plan) Apply() error {
 	slog.Debug("writing config", "id", p.cfg.ID, "dir", p.paths.ConfigLibrary, "keys", len(p.doc))
-	if err := writeConfig(p.paths.ConfigLibrary, p.cfg.ID, p.doc); err != nil {
+	cfgPath, cfgBytes, err := writeConfig(p.paths.ConfigLibrary, p.cfg.ID, p.doc)
+	if err != nil {
 		return fmt.Errorf("write config: %w", err)
 	}
-	slog.Info("config written", "id", p.cfg.ID)
+	slog.Info("config written",
+		"id", p.cfg.ID,
+		"path", cfgPath,
+		"bytes", cfgBytes,
+		"connectors", len(p.cfg.Connectors),
+	)
 
 	for _, b := range p.cfg.Plugins {
 		slog.Debug("installing plugin", "name", b.Name, "source", b.Source)
-		if err := installPlugin(p.paths.OrgPlugins, b); err != nil {
+		res, err := installPlugin(p.paths.OrgPlugins, b)
+		if err != nil {
 			return fmt.Errorf("plugin %s: %w", b.Name, err)
 		}
-		slog.Info("plugin installed", "name", b.Name)
+		if res.Skipped {
+			slog.Info("plugin up to date", "name", b.Name, "dest", res.Dest, "sha256", res.SHA256)
+		} else {
+			slog.Info("plugin installed",
+				"name", b.Name,
+				"dest", res.Dest,
+				"bytes", res.Bytes,
+				"sha256", res.SHA256,
+				"source", b.Source,
+			)
+		}
 	}
 	for _, b := range p.cfg.Extensions {
 		slog.Debug("installing extension", "name", b.Name, "source", b.Source)
-		if err := installExtension(p.paths.Extensions, b); err != nil {
+		res, err := installExtension(p.paths.Extensions, b)
+		if err != nil {
 			return fmt.Errorf("extension %s: %w", b.Name, err)
 		}
-		slog.Info("extension installed", "name", b.Name)
+		if res.Skipped {
+			slog.Info("extension up to date", "name", b.Name, "dest", res.Dest, "sha256", res.SHA256)
+		} else {
+			slog.Info("extension installed",
+				"name", b.Name,
+				"dest", res.Dest,
+				"bytes", res.Bytes,
+				"sha256", res.SHA256,
+				"source", b.Source,
+			)
+		}
 	}
 	if p.activate {
-		if err := activateConfig(p.paths.ConfigLibrary, p.cfg.ID); err != nil {
+		metaPath, err := activateConfig(p.paths.ConfigLibrary, p.cfg.ID)
+		if err != nil {
 			return fmt.Errorf("activate: %w", err)
 		}
-		slog.Info("config activated", "id", p.cfg.ID)
+		slog.Info("config activated", "id", p.cfg.ID, "metaPath", metaPath)
 	}
 	return nil
 }

@@ -93,17 +93,21 @@ func boolPtr(p *bool) interface{} {
 	return *p
 }
 
-func writeConfig(dir, id string, doc map[string]interface{}) error {
+// writeConfig writes the config doc and returns the target path and the
+// number of bytes written.
+func writeConfig(dir, id string, doc map[string]interface{}) (string, int, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
+		return "", 0, err
 	}
 	target := filepath.Join(dir, id+".json")
-	return writeJSONAtomic(target, doc)
+	n, err := writeJSONAtomic(target, doc)
+	return target, n, err
 }
 
-func activateConfig(dir, id string) error {
+// activateConfig sets _meta.activeConfigId and returns the meta file path.
+func activateConfig(dir, id string) (string, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
+		return "", err
 	}
 	meta := filepath.Join(dir, "_meta.json")
 
@@ -112,20 +116,21 @@ func activateConfig(dir, id string) error {
 		_ = json.Unmarshal(data, &current)
 	}
 	current["activeConfigId"] = id
-	return writeJSONAtomic(meta, current)
+	_, err := writeJSONAtomic(meta, current)
+	return meta, err
 }
 
-func writeJSONAtomic(target string, v interface{}) error {
+func writeJSONAtomic(target string, v interface{}) (int, error) {
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		return err
+		return 0, err
 	}
 	tmp := target + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o644); err != nil {
-		return err
+		return 0, err
 	}
 	if err := os.Rename(tmp, target); err != nil {
-		return fmt.Errorf("atomic rename to %s: %w", target, err)
+		return 0, fmt.Errorf("atomic rename to %s: %w", target, err)
 	}
-	return nil
+	return len(data), nil
 }

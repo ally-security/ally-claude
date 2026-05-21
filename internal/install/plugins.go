@@ -12,45 +12,53 @@ import (
 	"github.com/anthropics/claude-3p-helper/internal/policy"
 )
 
-func installPlugin(baseDir string, b policy.Bundle) error {
-	data, err := fetch(b.Source)
-	if err != nil {
-		return fmt.Errorf("fetch %s: %w", b.Source, err)
-	}
-	if err := verifySHA256(data, b.SHA256); err != nil {
-		return err
-	}
+// InstallResult holds details about an install for logging.
+type InstallResult struct {
+	Dest    string
+	Bytes   int
+	SHA256  string
+	Skipped bool
+}
+
+func installPlugin(baseDir string, b policy.Bundle) (InstallResult, error) {
 	dest := filepath.Join(baseDir, b.Name)
 	stamp := filepath.Join(dest, ".synced-sha256")
 	if existing, err := os.ReadFile(stamp); err == nil && b.SHA256 != "" {
 		if strings.EqualFold(strings.TrimSpace(string(existing)), b.SHA256) {
-			return nil // already up to date
+			return InstallResult{Dest: dest, SHA256: b.SHA256, Skipped: true}, nil
 		}
 	}
 
-	// Stage into a sibling tmp dir, then swap.
+	data, err := fetch(b.Source)
+	if err != nil {
+		return InstallResult{}, fmt.Errorf("fetch %s: %w", b.Source, err)
+	}
+	if err := verifySHA256(data, b.SHA256); err != nil {
+		return InstallResult{}, err
+	}
+
 	tmp := dest + ".tmp"
 	_ = os.RemoveAll(tmp)
 	if err := os.MkdirAll(tmp, 0o755); err != nil {
-		return err
+		return InstallResult{}, err
 	}
 	if err := unzipBytes(data, tmp); err != nil {
 		_ = os.RemoveAll(tmp)
-		return fmt.Errorf("unzip plugin %s: %w", b.Name, err)
+		return InstallResult{}, fmt.Errorf("unzip plugin %s: %w", b.Name, err)
 	}
 	sum := b.SHA256
 	if sum == "" {
 		sum = sha256Hex(data)
 	}
 	if err := os.WriteFile(filepath.Join(tmp, ".synced-sha256"), []byte(sum), 0o644); err != nil {
-		return err
+		return InstallResult{}, err
 	}
 
 	_ = os.RemoveAll(dest)
 	if err := os.Rename(tmp, dest); err != nil {
-		return fmt.Errorf("swap %s: %w", dest, err)
+		return InstallResult{}, fmt.Errorf("swap %s: %w", dest, err)
 	}
-	return nil
+	return InstallResult{Dest: dest, Bytes: len(data), SHA256: sum}, nil
 }
 
 func unzipBytes(data []byte, dest string) error {
