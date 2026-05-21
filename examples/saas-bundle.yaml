@@ -1,0 +1,115 @@
+# Example MDM-style policy: installs a baseline SaaS bundle as Claude-3p
+# connectors. Drop this file in a repo and run:
+#
+#   claude-3p-helper sync your-org/claude-policy/examples/saas-bundle.yaml
+#
+# Connector URLs and oauth clientIds below are illustrative — replace each
+# with the actual values from the vendor's MCP integration docs (or your
+# own proxy, if you front them through one).
+
+id: saas-baseline-2026-05
+name: "SaaS Baseline (Notion / PostHog / Linear / HubSpot / GDrive / Gmail / Slack)"
+
+inferenceProvider: anthropic
+
+# Required for telemetry attribution. Generate one UUID per deployment.
+deploymentOrganizationUuid: 00000000-0000-0000-0000-000000000000
+
+# Block ad-hoc local MCP servers so only the connectors in this file are
+# usable. Drop or flip to true if you want users to add their own.
+isLocalDevMcpEnabled: false
+isDesktopExtensionEnabled: true
+
+connectors:
+  - name: notion
+    url: https://mcp.notion.com/mcp
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "read write"
+      callbackPort: 53281
+    toolPolicy:
+      create_pages: allow
+      update_page: allow
+      delete_pages: ask
+
+  - name: posthog
+    url: https://mcp.posthog.com/mcp
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "read"
+      callbackPort: 53282
+    toolPolicy:
+      query_run: allow
+      experiment_delete: ask
+
+  - name: linear
+    url: https://mcp.linear.app/sse
+    transport: sse
+    oauth:
+      clientId: REPLACE_ME
+      scope: "read write"
+      callbackPort: 53283
+    toolPolicy:
+      save_issue: allow
+      delete_comment: ask
+
+  - name: hubspot
+    url: https://mcp.hubspot.com/mcp
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "crm.objects.contacts.read crm.objects.deals.read"
+      callbackPort: 53284
+
+  - name: google-drive
+    url: https://mcp.googleapis.com/drive
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "https://www.googleapis.com/auth/drive.readonly"
+      callbackPort: 53285
+    toolPolicy:
+      delete_file: ask
+
+  - name: gmail
+    url: https://mcp.googleapis.com/gmail
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "https://www.googleapis.com/auth/gmail.modify"
+      callbackPort: 53286
+    toolPolicy:
+      send_message: ask
+
+  - name: slack
+    url: https://mcp.slack.com/mcp
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "channels:read chat:write search:read"
+      callbackPort: 53287
+    toolPolicy:
+      slack_send_message: ask
+      slack_create_canvas: ask
+
+# Optional: per-server tool policy overrides at the org level. Useful when
+# you want to layer additional approvals beyond what the connector ships.
+orgPluginSettings:
+  slack:
+    toolPolicy:
+      slack_delete_message: blocked
+
+# Optional plugin/extension bundles fetched and dropped into the local
+# Claude-3p directories. Uncomment and replace with your own artifacts.
+#
+# plugins:
+#   - name: acme-runbooks
+#     source: https://github.com/acme/claude-plugins/releases/download/v1.0/runbooks.zip
+#     sha256: 0000000000000000000000000000000000000000000000000000000000000000
+#
+# extensions:
+#   - name: jira
+#     source: https://example.com/jira.mcpb
+#     sha256: 0000000000000000000000000000000000000000000000000000000000000000
