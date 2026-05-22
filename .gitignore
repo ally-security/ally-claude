@@ -1,0 +1,8 @@
+# Editor / agent state
+.claude/
+.idea/
+.vscode/
+
+# Build artifacts
+/dist/
+/claude-3p-helper
