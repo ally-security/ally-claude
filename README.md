@@ -30,24 +30,45 @@ registry — that remains MDM territory.
 
 ## Install
 
-Grab the binary for your platform from the latest
-[release](https://github.com/ally-security/ally-claude/releases/latest):
+One-liner — detects OS/arch, downloads the latest release archive,
+verifies sha256, installs to `/usr/local/bin` (or `~/.local/bin` if
+that isn't writable):
 
 ```sh
-# macOS arm64
-curl -fsSL -o claude-3p-helper.tar.gz \
-  https://github.com/ally-security/ally-claude/releases/latest/download/claude-3p-helper_<version>_darwin_arm64.tar.gz
-tar xzf claude-3p-helper.tar.gz
-mv claude-3p-helper /usr/local/bin/
+curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/install.sh | sh
 ```
 
-Subsequent updates with `claude-3p-helper self-update`.
+While the repo is private, the script needs a token to reach the
+releases API and the private assets:
+
+```sh
+export GITHUB_TOKEN=$(gh auth token)
+curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/install.sh | sh
+```
+
+Pin a version or override the install directory:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/install.sh \
+  | sh -s -- --version v0.1.0 --dir ~/.local/bin
+```
+
+After the first install, subsequent updates with:
+
+```sh
+claude-3p-helper self-update          # download + replace
+claude-3p-helper self-update --check  # report whether an update exists
+```
 
 Or build from source:
 
 ```sh
 go install github.com/anthropics/claude-3p-helper/cmd/claude-3p-helper@latest
 ```
+
+Windows users: grab the `.zip` directly from the
+[releases page](https://github.com/ally-security/ally-claude/releases/latest)
+— the install script doesn't cover Windows.
 
 ## Usage
 
