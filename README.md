@@ -44,10 +44,12 @@ claude-3p-helper version
 ```
 
 `sync` resolves the argument as a local file first, then falls back
-to `https://raw.githubusercontent.com/<user>/<repo>/<branch>/<path>`.
-By default the synced config becomes active (`_meta.activeConfigId`);
-use `--no-activate` to opt out, or `--dry-run` to preview without
-writing. `--verbose` enables debug-level logs.
+to GitHub. For private policy repos, set `GITHUB_TOKEN` (or `GH_TOKEN`)
+and the resolver fetches via the GitHub Contents API; otherwise it
+uses `raw.githubusercontent.com`. By default the synced config becomes
+active (`_meta.activeConfigId`); use `--no-activate` to opt out, or
+`--dry-run` to preview without writing. `--verbose` enables
+debug-level logs.
 
 Two example policies live in [`examples/`](examples/):
 
