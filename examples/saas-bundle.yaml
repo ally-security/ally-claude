@@ -1,0 +1,140 @@
+# Example MDM-style policy: installs a baseline SaaS bundle as Claude-3p
+# connectors. Drop this file in a repo and run:
+#
+#   claude-3p-helper sync your-org/claude-policy/examples/saas-bundle.yaml
+#
+# Schema reference for every key below:
+#   https://claude.com/docs/cowork/3p/configuration
+# Anthropic's curated connector directory (for discovering more MCP URLs):
+#   https://claude.ai/connectors
+#
+# Vendor-by-vendor URLs/transports were verified against each vendor's
+# public MCP docs (May 2026). Replace any REPLACE_ME values with
+# credentials issued to your org.
+
+# Unique identifier for this config in configLibrary/<id>.json.
+# Docs: https://claude.com/docs/cowork/3p/configuration#identity
+id: saas-baseline-2026-05
+name: "SaaS Baseline (Notion / PostHog / Linear / HubSpot / GDrive / Gmail / Slack)"
+
+# Inference provider. One of: anthropic, gateway, vertex, bedrock, foundry.
+# See examples/bedrock.yaml for a Bedrock-backed variant.
+# Docs: https://claude.com/docs/cowork/3p/configuration#connection
+inferenceProvider: anthropic
+
+# Required for telemetry attribution. Generate one UUID per deployment.
+# Docs: https://claude.com/docs/cowork/3p/configuration#telemetry
+deploymentOrganizationUuid: 00000000-0000-0000-0000-000000000000
+
+# Extension/connector surface flags.
+# Docs: https://claude.com/docs/cowork/3p/configuration#extensions
+#
+# isLocalDevMcpEnabled=false blocks ad-hoc MCP servers added through the
+# in-app UI; the managedMcpServers below are unaffected.
+# isDesktopExtensionEnabled=true allows .mcpb extensions to load.
+isLocalDevMcpEnabled: false
+isDesktopExtensionEnabled: true
+
+# Per-connector toolPolicy is intentionally omitted — Claude-3p defaults
+# to "ask" (prompt on first use). Override per-connector with a
+# toolPolicy: { tool: allow | ask | blocked } block when needed.
+# Docs: https://claude.com/docs/cowork/3p/configuration#managed-mcp-servers
+
+# Connectors are written to managedMcpServers in <id>.json.
+# Schema for each entry (name / url / transport / oauth / toolPolicy):
+#   https://claude.com/docs/cowork/3p/configuration#managed-mcp-servers
+connectors:
+  # Notion — official hosted MCP server, streamable HTTP, OAuth.
+  # Vendor docs: https://developers.notion.com/docs/get-started-with-mcp
+  # Anthropic listing: https://claude.ai/connectors (search "Notion")
+  # `oauth: true` enables RFC 7591 dynamic client registration so each
+  # workstation registers its own client on first auth.
+  - name: notion
+    url: https://mcp.notion.com/mcp
+    transport: http
+    oauth: true
+
+  # PostHog — official hosted MCP, auto-routes to US/EU based on account.
+  # Vendor docs: https://posthog.com/docs/model-context-protocol
+  - name: posthog
+    url: https://mcp.posthog.com/mcp
+    transport: http
+    oauth: true
+
+  # Linear — official hosted MCP. Docs explicitly state OAuth 2.1 with
+  # dynamic client registration.
+  # Vendor docs: https://linear.app/docs/mcp
+  - name: linear
+    url: https://mcp.linear.app/mcp
+    transport: http
+    oauth: true
+
+  # HubSpot — official hosted MCP. Unlike the others, HubSpot requires a
+  # pre-registered OAuth app: create one in the HubSpot developer portal
+  # with the read scopes you need, then paste the client id below.
+  # Vendor docs: https://developers.hubspot.com/mcp
+  - name: hubspot
+    url: https://mcp.hubspot.com/mcp
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "crm.objects.contacts.read crm.objects.deals.read"
+      callbackPort: 53284
+
+  # Slack — official MCP server. Slack does NOT support OAuth dynamic
+  # client registration, but they publish a public clientId and
+  # callbackPort for use with their hosted MCP — so no Slack app
+  # registration is needed.
+  # Vendor docs: https://docs.slack.dev/ai/slack-mcp-server/connect-to-claude
+  - name: slack
+    url: https://mcp.slack.com/mcp
+    transport: http
+    oauth:
+      clientId: "1601185624273.8899143856786"
+      callbackPort: 3118
+
+  # Google Drive — official Google-hosted MCP. Requires a pre-registered
+  # OAuth 2.0 client (Web application type) created in Google Cloud
+  # Console. Google does not support dynamic client registration.
+  # Vendor docs: https://developers.google.com/workspace/guides/configure-mcp-servers
+  - name: google-drive
+    url: https://drivemcp.googleapis.com/mcp/v1
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "https://www.googleapis.com/auth/drive.readonly"
+      callbackPort: 53285
+
+  # Gmail — official Google-hosted MCP. Same OAuth requirements as Drive.
+  # Vendor docs: https://developers.google.com/workspace/guides/configure-mcp-servers
+  - name: gmail
+    url: https://gmailmcp.googleapis.com/mcp/v1
+    transport: http
+    oauth:
+      clientId: REPLACE_ME
+      scope: "https://www.googleapis.com/auth/gmail.modify"
+      callbackPort: 53286
+
+# Optional: per-server tool policy overrides at the org level. Layers on
+# top of any per-connector toolPolicy.
+# Docs: https://claude.com/docs/cowork/3p/configuration#org-plugin-settings
+#
+# orgPluginSettings:
+#   slack:
+#     toolPolicy:
+#       slack_delete_message: blocked
+
+# Optional plugin/extension bundles fetched and dropped into the local
+# Claude-3p directories. Bundles are this tool's concept, not a 3P
+# config key — they install into ~/Library/Application Support/Claude-3p/
+# {orgPlugins,extensions}/ on macOS.
+#
+# plugins:
+#   - name: acme-runbooks
+#     source: https://github.com/acme/claude-plugins/releases/download/v1.0/runbooks.zip
+#     sha256: 0000000000000000000000000000000000000000000000000000000000000000
+#
+# extensions:
+#   - name: jira
+#     source: https://example.com/jira.mcpb
+#     sha256: 0000000000000000000000000000000000000000000000000000000000000000
