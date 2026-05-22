@@ -6,3 +6,6 @@
 # Build artifacts
 /dist/
 /claude-3p-helper
+
+# Local working policy — real credentials live here, never commit.
+/ally.yml
