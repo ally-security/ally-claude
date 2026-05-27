@@ -5,7 +5,7 @@ Manage **Claude Cowork 3P** from a YAML policy file. Sync writes Claude’s `con
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/allysecurity/ally-claude/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/install.sh | bash
 ```
 
 ## Quick start
