@@ -23,6 +23,14 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # go:embed in ally3p requires these files at vet/build time (not committed).
+      - name: Build embedded helpers
+        run: |
+          mkdir -p cmd/ally-claude-3p/embedded
+          go build -o cmd/ally-claude-3p/embedded/google-workspace-mcp-auth ./cmd/google-workspace-mcp-auth
+          go build -o cmd/ally-claude-3p/embedded/slack-mcp-auth ./cmd/slack-mcp-auth
+          go build -o cmd/ally-claude-3p/embedded/hubspot-mcp-auth ./cmd/hubspot-mcp-auth
+
       - name: gofmt
         run: |
           unformatted=$(gofmt -l .)
