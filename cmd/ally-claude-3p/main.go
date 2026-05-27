@@ -167,7 +167,10 @@ func cmdClaudeLogin(args []string) int {
 		return 0
 
 	case "google":
-		scopes := policyGoogleScopes(policy)
+		var scopes string
+		if policy != nil {
+			scopes = policyGoogleScopes(policy)
+		}
 		if scopes == "" {
 			var err error
 			scopes, err = googleworkspace.MergedScopesFromClaude3P()
@@ -433,6 +436,9 @@ func hubspotClientFromPolicy(s claude3p.ServerPolicy) (clientID, clientSecret st
 }
 
 func policyHasSlack(policy *claude3p.PolicyFile) bool {
+	if policy == nil {
+		return false
+	}
 	for _, s := range policy.Servers {
 		if isSlackServer(s) {
 			return true
@@ -442,6 +448,9 @@ func policyHasSlack(policy *claude3p.PolicyFile) bool {
 }
 
 func policyHasHubSpot(policy *claude3p.PolicyFile) bool {
+	if policy == nil {
+		return false
+	}
 	for _, s := range policy.Servers {
 		if isHubSpotServer(s) {
 			return true
@@ -451,6 +460,9 @@ func policyHasHubSpot(policy *claude3p.PolicyFile) bool {
 }
 
 func policyHasGoogle(policy *claude3p.PolicyFile) bool {
+	if policy == nil {
+		return false
+	}
 	for _, s := range policy.Servers {
 		if strings.TrimSpace(s.GoogleService) != "" {
 			return true
@@ -460,6 +472,9 @@ func policyHasGoogle(policy *claude3p.PolicyFile) bool {
 }
 
 func policyGoogleScopes(policy *claude3p.PolicyFile) string {
+	if policy == nil {
+		return ""
+	}
 	var parts []string
 	for _, s := range policy.Servers {
 		gs := strings.TrimSpace(s.GoogleService)
