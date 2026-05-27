@@ -9,6 +9,7 @@ import (
 )
 
 func TestSyncFigmaRemoteShorthand(t *testing.T) {
+	setTestClaude3PHome(t)
 	policy := &claude3p.PolicyFile{
 		Servers: []claude3p.ServerPolicy{
 			{Figma: "remote"},
@@ -46,6 +47,7 @@ func TestSyncFigmaRemoteShorthand(t *testing.T) {
 }
 
 func TestSyncFigmaDesktopNoOAuth(t *testing.T) {
+	setTestClaude3PHome(t)
 	policy := &claude3p.PolicyFile{
 		Servers: []claude3p.ServerPolicy{
 			{Figma: "desktop"},

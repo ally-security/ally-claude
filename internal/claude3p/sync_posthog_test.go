@@ -9,6 +9,7 @@ import (
 )
 
 func TestSyncPostHogShorthand(t *testing.T) {
+	setTestClaude3PHome(t)
 	policy := &claude3p.PolicyFile{
 		Servers: []claude3p.ServerPolicy{
 			{PostHog: true},

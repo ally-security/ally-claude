@@ -10,6 +10,7 @@ import (
 )
 
 func TestSyncHubSpotShorthand(t *testing.T) {
+	setTestClaude3PHome(t)
 	helperDir := t.TempDir()
 	helper := filepath.Join(helperDir, "hubspot-mcp-auth")
 	if err := os.WriteFile(helper, []byte("#!/bin/sh\n"), 0o755); err != nil {
