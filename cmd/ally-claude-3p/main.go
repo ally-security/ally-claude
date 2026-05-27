@@ -357,25 +357,7 @@ func cmdClaudeSync(args []string) int {
 		return 1
 	}
 	fmt.Fprintf(os.Stderr, "✓ wrote %s\n", result.ConfigLibraryPath)
-
-	if policyHasGoogle(policy) {
-		if err := googleworkspace.EnsureUnifiedLogin(policyGoogleScopes(policy)); err != nil {
-			fmt.Fprintf(os.Stderr, "Google sign-in failed: %v\n", err)
-			return 1
-		}
-	}
-	if policyHasSlack(policy) {
-		if err := slackmcp.EnsureLogin(); err != nil {
-			fmt.Fprintf(os.Stderr, "Slack sign-in failed: %v\n", err)
-			return 1
-		}
-	}
-	if policyHasHubSpot(policy) {
-		if err := hubspotmcp.EnsureLogin(); err != nil {
-			fmt.Fprintf(os.Stderr, "HubSpot sign-in failed: %v\n", err)
-			return 1
-		}
-	}
+	printSyncLoginReminder(policy)
 	return 0
 }
 
@@ -524,10 +506,27 @@ Policy file format: see README or run sync --dry to preview.
 `)
 }
 
+func printSyncLoginReminder(policy *claude3p.PolicyFile) {
+	var need []string
+	if policyHasGoogle(policy) {
+		need = append(need, "google")
+	}
+	if policyHasSlack(policy) {
+		need = append(need, "slack")
+	}
+	if policyHasHubSpot(policy) {
+		need = append(need, "hubspot")
+	}
+	if len(need) == 0 {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "OAuth tokens: run `ally3p claude login %s` when ready (sync does not open a browser).\n", strings.Join(need, ", "))
+}
+
 func printClaudeUsage() {
 	fmt.Fprint(os.Stderr, `Claude commands:
-  claude sync <policy.yaml>              Apply policy → configLibrary + Keychain
-  claude sync <policy.yaml> --dry        Preview JSON (no writes, no sign-in)
+  claude sync <policy.yaml>              Apply policy → configLibrary + Keychain (no browser OAuth)
+  claude sync <policy.yaml> --dry        Preview JSON (no writes)
 
 Login (browser OAuth / tokens):
   claude login <policy.yaml>             Sign in to all OAuth services in policy
