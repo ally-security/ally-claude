@@ -42,11 +42,20 @@ servers:
       client_id: "YOUR_SLACK_CLIENT_ID"
       client_secret: "YOUR_SLACK_CLIENT_SECRET"
     callback_port: 3118
+    tool_policy:
+      slack_search_public: allow
+      slack_read_channel: allow
+      slack_send_message_draft: ask
+      # ... list every Slack MCP tool
 
   - google_service: gmail
     client_id: "YOUR_ID.apps.googleusercontent.com"
     client_secret: "GOCSPX-..."
     scope: "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose"
+    tool_policy:
+      list_drafts: allow
+      create_draft: ask
+      # ... list every Gmail MCP tool
 
   - google_service: drive
     client_id: "YOUR_ID.apps.googleusercontent.com"
