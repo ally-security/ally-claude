@@ -1,219 +1,92 @@
 #!/bin/sh
-# claude-3p-helper installer.
+# install.sh — install ally3p from GitHub Releases
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/install.sh | sh
-#   curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/install.sh | sh -s -- --version v0.1.0
-#   curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/install.sh | sh -s -- --dir ~/.local/bin
+#   curl -fsSL https://raw.githubusercontent.com/allysecurity/ally-claude/main/install.sh | bash
 #
-# Flags:
-#   --version <tag>   install a specific release (default: latest)
-#   --dir <path>      destination directory (default: /usr/local/bin if writable,
-#                     else $HOME/.local/bin)
+# Optional:
+#   INSTALL_DIR=$HOME/.local/bin bash install.sh
 #
-# Env:
-#   GITHUB_TOKEN / GH_TOKEN   personal access token, required for private repos.
-#                             Easiest way to get one with the right scopes:
-#                                 export GITHUB_TOKEN=$(gh auth token)
+# Downloads ally3p only. Helper binaries (google/slack/hubspot auth) are embedded
+# and installed via: ally3p prereq --dir <bin-dir>
 
-set -eu
+set -e
 
-REPO="ally-security/ally-claude"
-BINARY="claude-3p-helper"
-VERSION=""
-DEST=""
+REPO="allysecurity/ally-claude"
+BIN_DIR="/usr/local/bin"
 
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --version) VERSION="$2"; shift 2 ;;
-    --dir)     DEST="$2"; shift 2 ;;
-    -h|--help)
-      sed -n '/^# Usage:/,/^# *$/p' "$0" | sed 's/^# \{0,1\}//'
-      exit 0
-      ;;
-    *)
-      echo "unknown flag: $1" >&2
-      exit 2
-      ;;
-  esac
-done
+if [ -n "$INSTALL_DIR" ]; then
+  BIN_DIR="$INSTALL_DIR"
+fi
 
-# ── platform detection ────────────────────────────────────────────────
-uname_s=$(uname -s)
-uname_m=$(uname -m)
-
-case "$uname_s" in
-  Darwin) OS=darwin ;;
-  Linux)  OS=linux ;;
-  MINGW*|MSYS*|CYGWIN*)
-    echo "Windows is not supported by this script. Download the .zip from:" >&2
-    echo "  https://github.com/$REPO/releases/latest" >&2
-    exit 1
-    ;;
+OS="$(uname -s)"
+case "$OS" in
+  Darwin) OS="darwin" ;;
   *)
-    echo "unsupported OS: $uname_s" >&2
+    echo "Unsupported OS: $OS (releases are macOS-only today)" >&2
     exit 1
     ;;
 esac
 
-case "$uname_m" in
-  x86_64|amd64) ARCH=amd64 ;;
-  arm64|aarch64) ARCH=arm64 ;;
+ARCH="$(uname -m)"
+case "$ARCH" in
+  x86_64 | amd64) ARCH="amd64" ;;
+  arm64 | aarch64) ARCH="arm64" ;;
   *)
-    echo "unsupported architecture: $uname_m" >&2
+    echo "Unsupported arch: $ARCH" >&2
     exit 1
     ;;
 esac
 
-# ── prerequisites ─────────────────────────────────────────────────────
-need() {
-  command -v "$1" >/dev/null 2>&1 || {
-    echo "missing required tool: $1" >&2
-    exit 1
-  }
-}
-need curl
-need tar
-
-# sha256 verification is best-effort; pick whichever tool the host has.
-SHA_CMD=""
-if command -v sha256sum >/dev/null 2>&1; then
-  SHA_CMD="sha256sum"
-elif command -v shasum >/dev/null 2>&1; then
-  SHA_CMD="shasum -a 256"
-fi
-
-# ── auth + fetch helpers ──────────────────────────────────────────────
-TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
-
-api_get() {
-  # GET an api.github.com JSON endpoint and print the body.
-  url="$1"
-  if [ -n "$TOKEN" ]; then
-    curl -fsSL -H "Authorization: token $TOKEN" -H "Accept: application/vnd.github+json" "$url"
-  else
-    curl -fsSL -H "Accept: application/vnd.github+json" "$url"
+fetch_latest_tag() {
+  json="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest")"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - <<'PY' "$json"
+import json, sys
+print(json.loads(sys.argv[1])["tag_name"])
+PY
+    return
   fi
+  echo "$json" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/'
 }
 
-api_download() {
-  # Download an asset by its api.github.com URL (works for private repos
-  # when $TOKEN is set; the github.com/.../releases/download/... URLs
-  # 404 anonymously on private repos).
-  url="$1"; out="$2"
-  if [ -n "$TOKEN" ]; then
-    curl -fsSL -H "Authorization: token $TOKEN" -H "Accept: application/octet-stream" -o "$out" "$url"
-  else
-    curl -fsSL -H "Accept: application/octet-stream" -o "$out" "$url"
-  fi
-}
-
-# Parse an asset's API url out of the release JSON by asset name.
-# Relies on each asset object containing "url" before "name" (the
-# default order in the GitHub releases API response).
-asset_url() {
-  name="$1"; json="$2"
-  echo "$json" \
-    | tr -d '\n' \
-    | sed 's/{/\n{/g' \
-    | grep "\"name\":[ ]*\"$name\"" \
-    | sed -n 's/.*"url":[ ]*"\([^"]*\)".*/\1/p' \
-    | head -n1
-}
-
-# ── resolve release ───────────────────────────────────────────────────
-if [ -z "$VERSION" ]; then
-  echo "→ resolving latest release for $REPO..."
-  if ! release_json=$(api_get "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null); then
-    echo "could not query releases (404 / 403). If $REPO is private, set" >&2
-    echo "  export GITHUB_TOKEN=\$(gh auth token)" >&2
-    echo "and re-run." >&2
-    exit 1
-  fi
-else
-  echo "→ fetching release metadata for $VERSION..."
-  if ! release_json=$(api_get "https://api.github.com/repos/$REPO/releases/tags/$VERSION" 2>/dev/null); then
-    echo "could not find release $VERSION" >&2
-    exit 1
-  fi
-fi
-
-VERSION=$(echo "$release_json" | sed -n 's/.*"tag_name":[ ]*"\([^"]*\)".*/\1/p' | head -n1)
-if [ -z "$VERSION" ]; then
-  echo "could not parse tag_name from release JSON" >&2
+echo "→ Fetching latest release..."
+LATEST="$(fetch_latest_tag)"
+if [ -z "$LATEST" ]; then
+  echo "Failed to fetch latest release tag from GitHub." >&2
   exit 1
 fi
-VERSION_NUM=$(echo "$VERSION" | sed 's/^v//')
-ARCHIVE="${BINARY}_${VERSION_NUM}_${OS}_${ARCH}.tar.gz"
+echo "  Latest: $LATEST"
 
-ARCHIVE_URL=$(asset_url "$ARCHIVE" "$release_json")
-SUMS_URL=$(asset_url "checksums.txt" "$release_json")
+VERSION="${LATEST#v}"
+TMPDIR="$(mktemp -d)"
+trap 'rm -rf "$TMPDIR"' EXIT
 
-if [ -z "$ARCHIVE_URL" ]; then
-  echo "release $VERSION has no asset named $ARCHIVE" >&2
+ARCHIVE="ally3p_${VERSION}_${OS}_${ARCH}.tar.gz"
+URL="https://github.com/${REPO}/releases/download/${LATEST}/${ARCHIVE}"
+echo "→ Downloading ally3p ($OS/$ARCH)..."
+if ! curl -fsSL "$URL" -o "$TMPDIR/$ARCHIVE"; then
+  echo "Failed to download $URL" >&2
   exit 1
 fi
-
-# ── destination ───────────────────────────────────────────────────────
-if [ -z "$DEST" ]; then
-  if [ -w /usr/local/bin ] 2>/dev/null; then
-    DEST=/usr/local/bin
-  else
-    DEST="$HOME/.local/bin"
-  fi
+tar -xzf "$TMPDIR/$ARCHIVE" -C "$TMPDIR"
+ALLY3P="$TMPDIR/ally3p"
+if [ ! -f "$ALLY3P" ]; then
+  ALLY3P="$(find "$TMPDIR" -name ally3p -type f | head -1)"
 fi
-mkdir -p "$DEST"
-
-# ── download + verify ─────────────────────────────────────────────────
-TMP=$(mktemp -d 2>/dev/null || mktemp -d -t claude-3p-helper)
-trap 'rm -rf "$TMP"' EXIT
-
-echo "→ downloading $ARCHIVE"
-api_download "$ARCHIVE_URL" "$TMP/$ARCHIVE"
-
-if [ -n "$SHA_CMD" ] && [ -n "$SUMS_URL" ]; then
-  echo "→ verifying sha256"
-  api_download "$SUMS_URL" "$TMP/checksums.txt"
-  expected=$(grep "  $ARCHIVE$" "$TMP/checksums.txt" | awk '{print $1}')
-  if [ -z "$expected" ]; then
-    echo "could not find $ARCHIVE in checksums.txt" >&2
-    exit 1
-  fi
-  actual=$(cd "$TMP" && $SHA_CMD "$ARCHIVE" | awk '{print $1}')
-  if [ "$expected" != "$actual" ]; then
-    echo "sha256 mismatch:" >&2
-    echo "  expected: $expected" >&2
-    echo "  actual:   $actual" >&2
-    exit 1
-  fi
-else
-  echo "→ skipping checksum verification (no sha256sum/shasum or no checksums asset)"
+if [ -z "$ALLY3P" ] || [ ! -f "$ALLY3P" ]; then
+  echo "Could not find ally3p in archive $ARCHIVE" >&2
+  exit 1
 fi
+install -m 755 "$ALLY3P" "$BIN_DIR/ally3p"
+echo "  Installed $BIN_DIR/ally3p"
 
-# ── extract + install ─────────────────────────────────────────────────
-echo "→ extracting"
-tar -xzf "$TMP/$ARCHIVE" -C "$TMP"
-chmod +x "$TMP/$BINARY"
+echo "→ Installing embedded helpers (google, slack, hubspot)..."
+"$BIN_DIR/ally3p" prereq --dir "$BIN_DIR"
 
-echo "→ installing to $DEST/$BINARY"
-if mv "$TMP/$BINARY" "$DEST/$BINARY" 2>/dev/null; then
-  :
-else
-  echo "  (sudo required to write to $DEST)"
-  sudo mv "$TMP/$BINARY" "$DEST/$BINARY"
-fi
-
-# ── PATH check ────────────────────────────────────────────────────────
-case ":$PATH:" in
-  *":$DEST:"*) ;;
-  *)
-    echo
-    echo "warning: $DEST is not on your \$PATH."
-    echo "add this to your shell profile:"
-    echo "  export PATH=\"$DEST:\$PATH\""
-    ;;
-esac
-
-echo
-echo "✓ installed $BINARY $VERSION → $DEST/$BINARY"
-"$DEST/$BINARY" version 2>/dev/null || true
+echo ""
+echo "✓ ally3p + helpers installed to $BIN_DIR"
+echo ""
+echo "Next steps:"
+echo "  1. Sync your policy: ally3p claude sync my-policy.yaml"
+echo "  2. Restart Claude Cowork 3P"
