@@ -9,11 +9,11 @@ import (
 var commands = map[string]struct{}{
 	"headers": {}, "header": {}, "print": {},
 	"login": {}, "auth": {},
-	"verify": {},
-	"logout": {},
-	"list": {},
+	"verify":              {},
+	"logout":              {},
+	"list":                {},
 	"install-credentials": {},
-	"help": {}, "-h": {}, "--help": {},
+	"help":                {}, "-h": {}, "--help": {},
 }
 
 var globalCommands = map[string]struct{}{

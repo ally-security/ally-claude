@@ -569,11 +569,11 @@ func normalizeOAuthMap(m map[string]interface{}, url string, fallbackPort int, f
 	if _, ok := out["callbackPort"]; !ok {
 		if fallbackPort != 0 {
 			out["callbackPort"] = fallbackPort
-	} else if strings.Contains(url, "mcp.slack.com") {
-		out["callbackPort"] = 3118
-	} else if strings.Contains(url, "mcp.hubspot.com") {
-		out["callbackPort"] = hubspotmcp.DefaultCallbackPort
-	}
+		} else if strings.Contains(url, "mcp.slack.com") {
+			out["callbackPort"] = 3118
+		} else if strings.Contains(url, "mcp.hubspot.com") {
+			out["callbackPort"] = hubspotmcp.DefaultCallbackPort
+		}
 	}
 	return out
 }

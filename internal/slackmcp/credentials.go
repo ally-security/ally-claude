@@ -10,7 +10,7 @@ const KeychainService = "slack-mcp-auth"
 
 const (
 	ClientKeychainAccount = "oauth-client"
-	UserTokenAccount        = "user-token"
+	UserTokenAccount      = "user-token"
 )
 
 type ClientCredentials struct {
