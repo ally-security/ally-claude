@@ -9,7 +9,7 @@ import (
 	"github.com/anthropics/google-workspace-mcp-auth/internal/claude3p"
 )
 
-func TestSyncHubSpotShorthand(t *testing.T) {
+func TestSyncHubSpot(t *testing.T) {
 	setTestClaude3PHome(t)
 	helperDir := t.TempDir()
 	helper := filepath.Join(helperDir, "hubspot-mcp-auth")
@@ -20,11 +20,13 @@ func TestSyncHubSpotShorthand(t *testing.T) {
 	policy := &claude3p.PolicyFile{
 		Servers: []claude3p.ServerPolicy{
 			{
-				HubSpot: true,
+				Name: "hubspot",
+				URL:  "https://mcp.hubspot.com/anthropic",
 				OAuth: map[string]interface{}{
 					"client_id":     "test-client",
 					"client_secret": "test-secret",
 				},
+				CallbackPort: 3119,
 			},
 		},
 	}

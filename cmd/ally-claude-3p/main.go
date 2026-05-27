@@ -145,9 +145,8 @@ func cmdClaudeLogin(args []string) int {
 		fmt.Println("No external login binary — sync your policy, restart Claude, then click Connect for the figma server.")
 		if policy != nil {
 			for _, s := range policy.Servers {
-				name, url := resolveFigmaEntry(s)
-				if figmamcp.IsRemote(url) || figmamcp.IsDesktop(url) {
-					fmt.Printf("  Policy entry: %q → %s\n", name, url)
+				if figmamcp.IsRemote(s.URL) || figmamcp.IsDesktop(s.URL) {
+					fmt.Printf("  Policy entry: %q → %s\n", s.Name, s.URL)
 				}
 			}
 		}
@@ -158,9 +157,8 @@ func cmdClaudeLogin(args []string) int {
 		fmt.Println("No external login binary — sync your policy, restart Claude, then click Connect for the posthog server.")
 		if policy != nil {
 			for _, s := range policy.Servers {
-				name, url := resolvePostHogEntry(s)
-				if posthoggmcp.IsRemote(url) {
-					fmt.Printf("  Policy entry: %q → %s\n", name, url)
+				if posthoggmcp.IsRemote(s.URL) {
+					fmt.Printf("  Policy entry: %q → %s\n", s.Name, s.URL)
 				}
 			}
 		}
@@ -369,44 +367,7 @@ func isSlackServer(s claude3p.ServerPolicy) bool {
 }
 
 func isHubSpotServer(s claude3p.ServerPolicy) bool {
-	if s.HubSpot {
-		return true
-	}
 	return hubspotmcp.IsRemote(s.URL)
-}
-
-func resolveFigmaEntry(s claude3p.ServerPolicy) (name, url string) {
-	name, url = s.Name, s.URL
-	switch strings.ToLower(strings.TrimSpace(s.Figma)) {
-	case "remote":
-		if name == "" {
-			name = "figma"
-		}
-		if url == "" {
-			url = figmamcp.RemoteMCPURL
-		}
-	case "desktop":
-		if name == "" {
-			name = "figma-desktop"
-		}
-		if url == "" {
-			url = figmamcp.DesktopMCPURL
-		}
-	}
-	return name, url
-}
-
-func resolvePostHogEntry(s claude3p.ServerPolicy) (name, url string) {
-	name, url = s.Name, s.URL
-	if s.PostHog {
-		if name == "" {
-			name = "posthog"
-		}
-		if url == "" {
-			url = posthoggmcp.RemoteMCPURL
-		}
-	}
-	return name, url
 }
 
 func slackClientFromPolicy(s claude3p.ServerPolicy) (clientID, clientSecret string) {

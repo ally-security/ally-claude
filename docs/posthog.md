@@ -3,21 +3,20 @@
 | | |
 |---|---|
 | **URL** | `https://mcp.posthog.com/mcp` |
-| **Auth** | Dynamic OAuth (`oauth: true`) |
-| **Sign in** | Claude **Connect** after sync |
+| **Auth** | `oauth: true` → Claude **Connect** after sync |
 
 PostHog routes to the correct US/EU region based on the account you sign in with.
+
+The Claude Code plugin may add headers such as `x-posthog-mcp-consumer: plugin`. Cowork 3P `managedMcpServers` does not allow `headers` and `oauth` on the same entry — use `oauth: true` here (same URL as the plugin).
 
 ## Policy
 
 ```yaml
 servers:
-  - posthog: true
-
-  # Or explicit:
-  # - name: posthog
-  #   url: https://mcp.posthog.com/mcp
-  #   oauth: true
+  - name: posthog
+    url: https://mcp.posthog.com/mcp
+    transport: http
+    oauth: true
 ```
 
 ## Setup
@@ -34,6 +33,7 @@ ally3p claude login posthog ally.yaml   # prints instructions
 {
   "name": "posthog",
   "url": "https://mcp.posthog.com/mcp",
+  "transport": "http",
   "oauth": true
 }
 ```

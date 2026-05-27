@@ -2,20 +2,23 @@ package claude3p_test
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 
 	"github.com/anthropics/google-workspace-mcp-auth/internal/claude3p"
 )
 
-func TestSyncPostHogShorthand(t *testing.T) {
+func TestSyncPostHog(t *testing.T) {
 	setTestClaude3PHome(t)
 	policy := &claude3p.PolicyFile{
 		Servers: []claude3p.ServerPolicy{
-			{PostHog: true},
+			{
+				Name:  "posthog",
+				URL:   "https://mcp.posthog.com/mcp",
+				OAuth: true,
+			},
 		},
 	}
-	result, warnings, err := claude3p.Sync(policy, "", func(string) bool { return false })
+	result, _, err := claude3p.Sync(policy, "", func(string) bool { return false })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,15 +36,5 @@ func TestSyncPostHogShorthand(t *testing.T) {
 	}
 	if entry["oauth"] != true {
 		t.Fatalf("oauth: got %v", entry["oauth"])
-	}
-	found := false
-	for _, w := range warnings {
-		if strings.Contains(w, "PostHog MCP uses oauth:true") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Fatalf("expected PostHog oauth warning, got %v", warnings)
 	}
 }

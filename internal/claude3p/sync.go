@@ -14,7 +14,6 @@ import (
 
 	"github.com/anthropics/google-workspace-mcp-auth/internal/figmamcp"
 	"github.com/anthropics/google-workspace-mcp-auth/internal/hubspotmcp"
-	"github.com/anthropics/google-workspace-mcp-auth/internal/posthoggmcp"
 )
 
 // PolicyFile is the user-facing YAML schema.
@@ -31,6 +30,12 @@ import (
 //	servers:
 //	  - name: linear
 //	    url: https://mcp.linear.app/mcp
+//	    transport: http
+//	    oauth: true
+//
+//	  - name: posthog
+//	    url: https://mcp.posthog.com/mcp
+//	    transport: http
 //	    oauth: true
 //
 //	  - name: google-gmail
@@ -68,14 +73,8 @@ type ServerPolicy struct {
 	// Slack/Cursor-style auth block (maps to oauth.clientId in Claude config).
 	Auth map[string]interface{} `yaml:"auth"`
 
-	// Figma shorthand: figma: remote | desktop
-	Figma string `yaml:"figma"`
-
-	// PostHog shorthand: posthog: true
-	PostHog bool `yaml:"posthog"`
-
-	// HubSpot shorthand: hubspot: true (requires oauth client_id/client_secret)
-	HubSpot bool `yaml:"hubspot"`
+	Transport string            `yaml:"transport"` // default http when url is set
+	Headers   map[string]string `yaml:"headers"`
 
 	// Google-specific: set google_service to one of gmail/drive/calendar/chat/people.
 	// The binary path, URL, and default ports/scopes are auto-filled.
@@ -154,9 +153,6 @@ func Sync(policy *PolicyFile, helperBinaryDir string, keychainChecker KeychainCh
 	// --- Servers ---
 	var servers []interface{}
 	for _, srv := range policy.Servers {
-		srv = normalizeFigmaServer(srv)
-		srv = normalizePostHogServer(srv)
-		srv = normalizeHubSpotServer(srv)
 		entry, warn, err := buildServerEntry(srv, helperBinaryDir, keychainChecker)
 		if err != nil {
 			return nil, warnings, fmt.Errorf("server %q: %w", srv.Name, err)
@@ -279,11 +275,23 @@ func buildServerEntry(srv ServerPolicy, helperDir string, kc KeychainChecker) (m
 	}
 
 	// --- Generic server ---
+	if strings.TrimSpace(srv.Name) == "" {
+		return nil, warnings, fmt.Errorf("server entry requires name")
+	}
+	if strings.TrimSpace(srv.URL) == "" {
+		return nil, warnings, fmt.Errorf("server %q requires url", srv.Name)
+	}
+
 	entry["name"] = srv.Name
 	entry["source"] = source
-	if srv.URL != "" {
-		entry["transport"] = "http"
-		entry["url"] = srv.URL
+	entry["url"] = srv.URL
+	transport := strings.TrimSpace(srv.Transport)
+	if transport == "" {
+		transport = "http"
+	}
+	entry["transport"] = transport
+	if len(srv.Headers) > 0 {
+		entry["headers"] = srv.Headers
 	}
 
 	if isSlackMCP(srv.URL) {
@@ -310,18 +318,19 @@ func buildServerEntry(srv ServerPolicy, helperDir string, kc KeychainChecker) (m
 		}
 	}
 
-	if figmamcp.IsRemote(srv.URL) {
-		warn := applyDynamicRemoteOAuth(srv, entry, "Figma")
-		warnings = append(warnings, warn...)
-	} else if figmamcp.IsDesktop(srv.URL) {
+	if figmamcp.IsDesktop(srv.URL) {
 		warnings = append(warnings, fmt.Sprintf(
 			"[%s] Figma desktop MCP requires the Figma desktop app running with MCP enabled (no OAuth)",
 			srv.Name,
 		))
-	} else if posthoggmcp.IsRemote(srv.URL) {
-		warn := applyDynamicRemoteOAuth(srv, entry, "PostHog")
-		warnings = append(warnings, warn...)
-	} else if oauth := buildOAuthEntry(srv); oauth != nil {
+	}
+	if len(srv.Headers) > 0 && buildOAuthEntry(srv) != nil {
+		warnings = append(warnings, fmt.Sprintf(
+			"[%s] Claude 3P does not allow headers and oauth on the same MCP server — use one or the other",
+			srv.Name,
+		))
+	}
+	if oauth := buildOAuthEntry(srv); oauth != nil {
 		entry["oauth"] = oauth
 	}
 	if srv.HeadersHelper != "" {
@@ -337,71 +346,6 @@ func buildServerEntry(srv ServerPolicy, helperDir string, kc KeychainChecker) (m
 
 func isSlackMCP(url string) bool {
 	return strings.Contains(strings.ToLower(url), "mcp.slack.com")
-}
-
-func normalizeFigmaServer(srv ServerPolicy) ServerPolicy {
-	mode := strings.ToLower(strings.TrimSpace(srv.Figma))
-	if mode == "" {
-		return srv
-	}
-	switch mode {
-	case "remote":
-		if srv.Name == "" {
-			srv.Name = "figma"
-		}
-		if srv.URL == "" {
-			srv.URL = figmamcp.RemoteMCPURL
-		}
-	case "desktop":
-		if srv.Name == "" {
-			srv.Name = "figma-desktop"
-		}
-		if srv.URL == "" {
-			srv.URL = figmamcp.DesktopMCPURL
-		}
-	default:
-		// leave as-is; buildServerEntry will error on unknown google_service only
-	}
-	return srv
-}
-
-func normalizePostHogServer(srv ServerPolicy) ServerPolicy {
-	if !srv.PostHog {
-		return srv
-	}
-	if srv.Name == "" {
-		srv.Name = "posthog"
-	}
-	if srv.URL == "" {
-		srv.URL = posthoggmcp.RemoteMCPURL
-	}
-	return srv
-}
-
-func normalizeHubSpotServer(srv ServerPolicy) ServerPolicy {
-	if !srv.HubSpot {
-		return srv
-	}
-	if srv.Name == "" {
-		srv.Name = "hubspot"
-	}
-	if srv.URL == "" {
-		srv.URL = hubspotmcp.RemoteMCPURL
-	}
-	if srv.CallbackPort == 0 {
-		srv.CallbackPort = hubspotmcp.DefaultCallbackPort
-	}
-	return srv
-}
-
-func applyDynamicRemoteOAuth(srv ServerPolicy, entry map[string]interface{}, provider string) []string {
-	if srv.OAuth != nil || srv.HeadersHelper != "" {
-		return nil
-	}
-	entry["oauth"] = true
-	return []string{
-		fmt.Sprintf("[%s] %s MCP uses oauth:true (dynamic client registration) — click Connect in Claude Cowork after restart", srv.Name, provider),
-	}
 }
 
 func buildSlackEntry(srv ServerPolicy, helperDir string) (map[string]interface{}, []string, error) {

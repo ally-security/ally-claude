@@ -2,23 +2,23 @@
 
 | Mode | URL | Auth |
 |------|-----|------|
-| Remote | `https://mcp.figma.com/mcp` | Dynamic OAuth → Claude Connect |
+| Remote | `https://mcp.figma.com/mcp` | `oauth: true` → Claude Connect |
 | Desktop | `http://127.0.0.1:3845/mcp` | Figma app running, no OAuth |
 
 ## Policy
 
 ```yaml
 servers:
-  - figma: remote          # shorthand (recommended)
-  # - figma: desktop       # optional local MCP
+  - name: figma
+    url: https://mcp.figma.com/mcp
+    transport: http
+    oauth: true
 
-  # Or explicit:
-  # - name: figma
-  #   url: https://mcp.figma.com/mcp
-  #   oauth: true
+  # Optional: local desktop MCP (no oauth)
+  # - name: figma-desktop
+  #   url: http://127.0.0.1:3845/mcp
+  #   transport: http
 ```
-
-Remote URLs get `oauth: true` automatically on sync if omitted.
 
 ## Setup (remote)
 
@@ -34,6 +34,7 @@ ally3p claude login figma ally.yaml   # prints instructions
 {
   "name": "figma",
   "url": "https://mcp.figma.com/mcp",
+  "transport": "http",
   "oauth": true
 }
 ```

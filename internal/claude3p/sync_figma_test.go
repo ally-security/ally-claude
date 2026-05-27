@@ -8,14 +8,18 @@ import (
 	"github.com/anthropics/google-workspace-mcp-auth/internal/claude3p"
 )
 
-func TestSyncFigmaRemoteShorthand(t *testing.T) {
+func TestSyncFigmaRemote(t *testing.T) {
 	setTestClaude3PHome(t)
 	policy := &claude3p.PolicyFile{
 		Servers: []claude3p.ServerPolicy{
-			{Figma: "remote"},
+			{
+				Name:  "figma",
+				URL:   "https://mcp.figma.com/mcp",
+				OAuth: true,
+			},
 		},
 	}
-	result, warnings, err := claude3p.Sync(policy, "", func(string) bool { return false })
+	result, _, err := claude3p.Sync(policy, "", func(string) bool { return false })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,15 +38,8 @@ func TestSyncFigmaRemoteShorthand(t *testing.T) {
 	if entry["oauth"] != true {
 		t.Fatalf("oauth: got %v", entry["oauth"])
 	}
-	found := false
-	for _, w := range warnings {
-		if strings.Contains(w, "Connect in Claude Cowork") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Fatalf("expected Connect warning, got %v", warnings)
+	if entry["transport"] != "http" {
+		t.Fatalf("transport: got %v", entry["transport"])
 	}
 }
 
@@ -50,10 +47,13 @@ func TestSyncFigmaDesktopNoOAuth(t *testing.T) {
 	setTestClaude3PHome(t)
 	policy := &claude3p.PolicyFile{
 		Servers: []claude3p.ServerPolicy{
-			{Figma: "desktop"},
+			{
+				Name: "figma-desktop",
+				URL:  "http://127.0.0.1:3845/mcp",
+			},
 		},
 	}
-	result, _, err := claude3p.Sync(policy, "", func(string) bool { return false })
+	result, warnings, err := claude3p.Sync(policy, "", func(string) bool { return false })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,5 +68,15 @@ func TestSyncFigmaDesktopNoOAuth(t *testing.T) {
 	}
 	if entry["url"] != "http://127.0.0.1:3845/mcp" {
 		t.Fatalf("url: got %v", entry["url"])
+	}
+	found := false
+	for _, w := range warnings {
+		if strings.Contains(w, "Figma desktop") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected desktop warning, got %v", warnings)
 	}
 }

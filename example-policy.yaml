@@ -9,26 +9,35 @@ banner:
 servers:
   - name: linear
     url: https://mcp.linear.app/mcp
+    transport: http
     oauth: true
 
-  # Figma remote (hosted) — oauth: true is auto-set on sync
-  - figma: remote
+  - name: figma
+    url: https://mcp.figma.com/mcp
+    transport: http
+    oauth: true
 
-  # PostHog — oauth: true is auto-set on sync
-  - posthog: true
+  # - name: figma-desktop
+  #   url: http://127.0.0.1:3845/mcp
+  #   transport: http
 
-  # HubSpot — MCP Auth App required (see README)
-  # - hubspot: true
+  - name: posthog
+    url: https://mcp.posthog.com/mcp
+    transport: http
+    oauth: true
+
+  # HubSpot — MCP Auth App required (see docs/hubspot.md)
+  # - name: hubspot
+  #   url: https://mcp.hubspot.com/anthropic
+  #   transport: http
   #   oauth:
   #     client_id: "YOUR_HUBSPOT_CLIENT_ID"
   #     client_secret: "YOUR_HUBSPOT_CLIENT_SECRET"
   #   callback_port: 3119
 
-  # Figma desktop — local MCP when Figma app is running (no OAuth)
-  # - figma: desktop
-
   - name: slack
     url: https://mcp.slack.com/mcp
+    transport: http
     oauth:
       client_id: "YOUR_SLACK_CLIENT_ID"
       client_secret: "YOUR_SLACK_CLIENT_SECRET"
