@@ -21,6 +21,10 @@
 3. **User Token Scopes**: `chat:write`, `search:read.*`, channel history scopes, etc.
 4. Enable MCP at `https://api.slack.com/apps/<APP_ID>/app-assistant`
 
+## Tool permissions
+
+List each Slack MCP tool under `tool_policy` as `allow` or `ask`. Unlisted tools default to **`ask`** on sync.
+
 ## Policy
 
 ```yaml
@@ -31,6 +35,11 @@ servers:
       client_id: "YOUR_SLACK_CLIENT_ID"
       client_secret: "YOUR_SLACK_CLIENT_SECRET"
     callback_port: 3118
+    tool_policy:
+      slack_read_channel: allow
+      slack_search_public: allow
+      slack_send_message_draft: ask
+      # ... every Slack tool
 ```
 
 ## Setup

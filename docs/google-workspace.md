@@ -8,6 +8,20 @@
 
 One Google account covers all `google_service` entries. Tokens are stored as `google-user` in Keychain and auto-refresh.
 
+## Tool permissions
+
+List every Gmail/Drive/Calendar tool in `tool_policy` as `allow` or `ask`. Sync fills the full tool catalog; **unlisted** tools default to **`ask`**.
+
+```yaml
+servers:
+  - google_service: gmail
+    tool_policy:
+      list_drafts: allow
+      search_threads: allow
+      create_draft: ask
+      delete_label: ask
+```
+
 ## Policy
 
 ```yaml
@@ -16,6 +30,13 @@ servers:
     client_id: "YOUR_ID.apps.googleusercontent.com"
     client_secret: "GOCSPX-..."
     scope: "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose"
+    tool_policy:
+      list_drafts: allow
+      get_thread: allow
+      search_threads: allow
+      list_labels: allow
+      create_draft: ask
+      # ... every tool for this service
 
   - google_service: drive
     client_id: "YOUR_ID.apps.googleusercontent.com"

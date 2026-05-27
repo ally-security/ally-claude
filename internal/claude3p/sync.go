@@ -46,7 +46,7 @@ import (
 type PolicyFile struct {
 	Inference *InferencePolicy `yaml:"inference"`
 	Banner    *BannerPolicy    `yaml:"banner"`
-	Servers   []ServerPolicy   `yaml:"servers"`
+	Servers []ServerPolicy `yaml:"servers"`
 }
 
 type InferencePolicy struct {
@@ -89,6 +89,9 @@ type ServerPolicy struct {
 	// Path to the headersHelper binary (auto-detected when google_service is set).
 	HeadersHelper    string `yaml:"headers_helper"`
 	HeadersHelperTTL int    `yaml:"headers_helper_ttl_sec"`
+
+	// Per-tool approval locks (tool name → allow | ask | blocked).
+	ToolPolicy map[string]string `yaml:"tool_policy"`
 }
 
 // ParsePolicyFile reads a YAML policy file.
@@ -271,6 +274,11 @@ func buildServerEntry(srv ServerPolicy, helperDir string, kc KeychainChecker) (m
 				))
 			}
 		}
+		warn, err := attachToolPolicy(entry, srv)
+		if err != nil {
+			return nil, warnings, err
+		}
+		warnings = append(warnings, warn...)
 		return entry, warnings, nil
 	}
 
@@ -302,6 +310,11 @@ func buildServerEntry(srv ServerPolicy, helperDir string, kc KeychainChecker) (m
 			for k, v := range entrySlack {
 				entry[k] = v
 			}
+			warn, err := attachToolPolicy(entry, srv)
+			if err != nil {
+				return nil, warnings, err
+			}
+			warnings = append(warnings, warn...)
 			return entry, warnings, nil
 		}
 	}
@@ -314,6 +327,11 @@ func buildServerEntry(srv ServerPolicy, helperDir string, kc KeychainChecker) (m
 			for k, v := range entryHubSpot {
 				entry[k] = v
 			}
+			warn, err := attachToolPolicy(entry, srv)
+			if err != nil {
+				return nil, warnings, err
+			}
+			warnings = append(warnings, warn...)
 			return entry, warnings, nil
 		}
 	}
@@ -341,6 +359,11 @@ func buildServerEntry(srv ServerPolicy, helperDir string, kc KeychainChecker) (m
 		}
 		entry["headersHelperTtlSec"] = ttl
 	}
+	warn, err := attachToolPolicy(entry, srv)
+	if err != nil {
+		return nil, warnings, err
+	}
+	warnings = append(warnings, warn...)
 	return entry, warnings, nil
 }
 

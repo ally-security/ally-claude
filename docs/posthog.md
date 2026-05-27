@@ -14,9 +14,13 @@ The Claude Code plugin may add headers such as `x-posthog-mcp-consumer: plugin`.
 ```yaml
 servers:
   - name: posthog
-    url: https://mcp.posthog.com/mcp
+    url: https://mcp.posthog.com/mcp?features=flags,dashboards,insights  # omit batch_exports feature
     transport: http
     oauth: true
+    tool_policy:
+      feature-flag-get-all: allow
+      create-feature-flag: ask
+      # list every tool you enable via ?features=; unlisted → ask on sync
 ```
 
 ## Setup
