@@ -2,11 +2,10 @@
 # install.sh — install ally3p from GitHub Releases
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/install.sh | sudo bash
 #
 # Optional:
-#   INSTALL_DIR=$HOME/.local/bin bash install.sh   # default if /usr/local/bin is not writable
-#   INSTALL_DIR=/usr/local/bin sudo -E bash install.sh
+#   INSTALL_DIR=/custom/path sudo bash install.sh
 #
 # Downloads ally3p only. Helper binaries (google/slack/hubspot auth) are embedded
 # and installed via: ally3p prereq --dir <bin-dir>
@@ -14,21 +13,7 @@
 set -e
 
 REPO="ally-security/ally-claude"
-
-pick_bin_dir() {
-  if [ -n "$INSTALL_DIR" ]; then
-    printf '%s' "$INSTALL_DIR"
-    return
-  fi
-  if [ -w /usr/local/bin ] 2>/dev/null; then
-    printf '%s' "/usr/local/bin"
-    return
-  fi
-  printf '%s' "${HOME}/.local/bin"
-}
-
-BIN_DIR="$(pick_bin_dir)"
-mkdir -p "$BIN_DIR"
+BIN_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
 OS="$(uname -s)"
 case "$OS" in
@@ -84,7 +69,7 @@ if ! curl -fsSL "$URL" -o "$TMPDIR/$ARCHIVE"; then
   echo "ERROR: could not download ${ARCHIVE}" >&2
   echo "       The latest release may predate ally3p — build from source:" >&2
   echo "         git clone https://github.com/${REPO}.git && cd ally-claude && make build" >&2
-  echo "         cp bin/ally3p ${BIN_DIR}/" >&2
+  echo "         sudo cp bin/ally3p ${BIN_DIR}/" >&2
   echo "       Or install a newer release when published: https://github.com/${REPO}/releases" >&2
   exit 1
 fi
@@ -101,8 +86,8 @@ fi
 
 if [ ! -w "$BIN_DIR" ]; then
   echo "ERROR: cannot write to $BIN_DIR" >&2
-  echo "       try: INSTALL_DIR=\$HOME/.local/bin bash install.sh" >&2
-  echo "       or:  sudo INSTALL_DIR=/usr/local/bin bash install.sh" >&2
+  echo "       run with sudo:" >&2
+  echo "         curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | sudo bash" >&2
   exit 1
 fi
 
@@ -111,18 +96,11 @@ echo "  Installed $BIN_DIR/ally3p"
 
 echo "→ Installing embedded helpers (google, slack, hubspot)..."
 if ! "$BIN_DIR/ally3p" prereq --dir "$BIN_DIR"; then
-  echo "WARN: prereq failed — if needed, run: sudo $BIN_DIR/ally3p prereq --dir $BIN_DIR" >&2
+  echo "WARN: prereq failed — run: sudo $BIN_DIR/ally3p prereq --dir $BIN_DIR" >&2
 fi
 
 echo ""
 echo "✓ Installed to $BIN_DIR/ally3p"
-case "$BIN_DIR" in
-  "$HOME/.local/bin" | "$HOME"/.local/bin)
-    echo ""
-    echo "Add to PATH if needed:"
-    echo '  export PATH="$HOME/.local/bin:$PATH"'
-    ;;
-esac
 echo ""
 echo "Next steps:"
 echo "  1. Sync your policy: ally3p claude sync my-policy.yaml"

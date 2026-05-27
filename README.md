@@ -5,14 +5,10 @@ Manage **Claude Cowork 3P** from a YAML policy file. Sync writes Claude’s `con
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/install.sh | sudo bash
 ```
 
-Uses `~/.local/bin` when `/usr/local/bin` is not writable. For system-wide install:
-
-```bash
-sudo INSTALL_DIR=/usr/local/bin bash install.sh
-```
+Installs to `/usr/local/bin` (override with `INSTALL_DIR=...` if needed).
 
 Releases ship **ally3p** only (v0.1.1+). If the installer reports a missing asset, build from source (see Dev below).
 
