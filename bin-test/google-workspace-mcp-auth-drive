@@ -1,0 +1,2 @@
+#!/bin/sh
+exec "bin-test/google-workspace-mcp-auth" drive "$@"
