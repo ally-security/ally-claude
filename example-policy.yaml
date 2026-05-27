@@ -1,0 +1,50 @@
+inference:
+  provider: bedrock
+  bedrock_region: us-east-1
+  bedrock_token: "..."
+
+banner:
+  enabled: false
+
+servers:
+  - name: linear
+    url: https://mcp.linear.app/mcp
+    oauth: true
+
+  # Figma remote (hosted) — oauth: true is auto-set on sync
+  - figma: remote
+
+  # PostHog — oauth: true is auto-set on sync
+  - posthog: true
+
+  # HubSpot — MCP Auth App required (see README)
+  # - hubspot: true
+  #   oauth:
+  #     client_id: "YOUR_HUBSPOT_CLIENT_ID"
+  #     client_secret: "YOUR_HUBSPOT_CLIENT_SECRET"
+  #   callback_port: 3119
+
+  # Figma desktop — local MCP when Figma app is running (no OAuth)
+  # - figma: desktop
+
+  - name: slack
+    url: https://mcp.slack.com/mcp
+    oauth:
+      client_id: "YOUR_SLACK_CLIENT_ID"
+      client_secret: "YOUR_SLACK_CLIENT_SECRET"
+    callback_port: 3118
+
+  - google_service: gmail
+    client_id: "YOUR_ID.apps.googleusercontent.com"
+    client_secret: "GOCSPX-..."
+    scope: "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose"
+
+  - google_service: drive
+    client_id: "YOUR_ID.apps.googleusercontent.com"
+    client_secret: "GOCSPX-..."
+    scope: "https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file"
+
+  - google_service: calendar
+    client_id: "YOUR_ID.apps.googleusercontent.com"
+    client_secret: "GOCSPX-..."
+    scope: "https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events.freebusy https://www.googleapis.com/auth/calendar.events.readonly"

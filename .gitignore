@@ -1,11 +1,18 @@
-# Editor / agent state
+# Build
+/bin/
+/google-workspace-mcp-auth
+/google-gmail-mcp-auth
+/dist/
+/cmd/ally-claude-3p/embedded/google-workspace-mcp-auth
+/cmd/ally-claude-3p/embedded/slack-mcp-auth
+/cmd/ally-claude-3p/embedded/hubspot-mcp-auth
+
+# Local policy (contains secrets)
+ally.yaml
+ally.yml
+
+# Editor
 .claude/
 .idea/
 .vscode/
-
-# Build artifacts
-/dist/
-/claude-3p-helper
-
-# Local working policy — real credentials live here, never commit.
-/ally.yml
+.DS_Store

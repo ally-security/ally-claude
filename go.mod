@@ -1,4 +1,4 @@
-module github.com/anthropics/claude-3p-helper
+module github.com/anthropics/google-workspace-mcp-auth
 
 go 1.22
 
