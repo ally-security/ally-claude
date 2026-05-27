@@ -13,7 +13,8 @@ curl -fsSL https://raw.githubusercontent.com/ally-security/ally-claude/main/inst
 ```bash
 cp example-policy.yaml ally.yaml   # edit with your creds
 ally3p claude sync ally.yaml --dry
-ally3p claude sync ally.yaml
+ally3p claude sync ally.yaml       # writes config + Keychain client secrets (no browser)
+ally3p claude login ally.yaml      # optional: OAuth when you are ready
 # Restart Claude Cowork 3P
 ```
 
@@ -34,7 +35,7 @@ See [`example-policy.yaml`](example-policy.yaml) for the full policy schema.
 
 ```bash
 ally3p prereq                          # extract embedded helpers
-ally3p claude sync <policy.yaml>       # apply policy
+ally3p claude sync <policy.yaml>       # apply policy (no browser OAuth)
 ally3p claude sync <policy.yaml> --dry # preview
 ally3p claude login slack [policy.yaml]
 ally3p claude login hubspot [policy.yaml]
