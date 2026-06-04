@@ -46,7 +46,20 @@ import (
 type PolicyFile struct {
 	Inference *InferencePolicy `yaml:"inference"`
 	Banner    *BannerPolicy    `yaml:"banner"`
-	Servers []ServerPolicy `yaml:"servers"`
+	Egress    *EgressPolicy    `yaml:"egress"`
+	// Cowork workspace settings (configLibrary top-level keys).
+	AutoModeEnabled   *bool             `yaml:"autoModeEnabled"`
+	BuiltinToolPolicy map[string]string `yaml:"builtinToolPolicy"`
+	Servers           []ServerPolicy    `yaml:"servers"`
+}
+
+// EgressPolicy controls which hosts the Cowork agent's tools (e.g. web fetch)
+// may reach. It maps to the configLibrary key coworkEgressAllowedHosts.
+// Entries are hostnames; "*" means unrestricted and "*.example.com" matches
+// subdomains. When egress is omitted or allowed_hosts is empty, sync defaults
+// to unrestricted ("*").
+type EgressPolicy struct {
+	AllowedHosts []string `yaml:"allowed_hosts"`
 }
 
 type InferencePolicy struct {
@@ -90,8 +103,10 @@ type ServerPolicy struct {
 	HeadersHelper    string `yaml:"headers_helper"`
 	HeadersHelperTTL int    `yaml:"headers_helper_ttl_sec"`
 
-	// Per-tool approval locks (tool name → allow | ask | blocked).
+	// Per-tool allow/ask/blocked (maps to configLibrary toolPolicy).
 	ToolPolicy map[string]string `yaml:"tool_policy"`
+	// When "readonly", sync fetches tools/list (when possible) and allows read-only tool names.
+	ToolPolicyAuto string `yaml:"tool_policy_auto"`
 }
 
 // ParsePolicyFile reads a YAML policy file.
@@ -153,6 +168,24 @@ func Sync(policy *PolicyFile, helperBinaryDir string, keychainChecker KeychainCh
 		config["banner"] = banner
 	}
 
+	// --- Egress allowlist (default: unrestricted) ---
+	config["coworkEgressAllowedHosts"] = resolveEgressAllowedHosts(policy.Egress)
+
+	if policy.AutoModeEnabled != nil {
+		config["autoModeEnabled"] = *policy.AutoModeEnabled
+	}
+	if len(policy.BuiltinToolPolicy) > 0 {
+		out := make(map[string]interface{}, len(policy.BuiltinToolPolicy))
+		for k, v := range policy.BuiltinToolPolicy {
+			if k = strings.TrimSpace(k); k != "" {
+				out[k] = strings.TrimSpace(v)
+			}
+		}
+		if len(out) > 0 {
+			config["builtinToolPolicy"] = out
+		}
+	}
+
 	// --- Servers ---
 	var servers []interface{}
 	for _, srv := range policy.Servers {
@@ -190,6 +223,23 @@ func (r *SyncResult) Apply() error {
 		return err
 	}
 	return os.WriteFile(r.ConfigLibraryPath, r.ConfigLibraryJSON, 0o600)
+}
+
+func resolveEgressAllowedHosts(eg *EgressPolicy) []string {
+	const unrestricted = "*"
+	if eg == nil {
+		return []string{unrestricted}
+	}
+	hosts := make([]string, 0, len(eg.AllowedHosts))
+	for _, h := range eg.AllowedHosts {
+		if h = strings.TrimSpace(h); h != "" {
+			hosts = append(hosts, h)
+		}
+	}
+	if len(hosts) == 0 {
+		return []string{unrestricted}
+	}
+	return hosts
 }
 
 // KeychainChecker reports whether an OAuth client secret exists in Keychain for a Google service id.
@@ -274,11 +324,7 @@ func buildServerEntry(srv ServerPolicy, helperDir string, kc KeychainChecker) (m
 				))
 			}
 		}
-		warn, err := attachToolPolicy(entry, srv)
-		if err != nil {
-			return nil, warnings, err
-		}
-		warnings = append(warnings, warn...)
+		finalizeServerEntry(entry, srv, helperDir, &warnings)
 		return entry, warnings, nil
 	}
 
@@ -310,11 +356,7 @@ func buildServerEntry(srv ServerPolicy, helperDir string, kc KeychainChecker) (m
 			for k, v := range entrySlack {
 				entry[k] = v
 			}
-			warn, err := attachToolPolicy(entry, srv)
-			if err != nil {
-				return nil, warnings, err
-			}
-			warnings = append(warnings, warn...)
+			finalizeServerEntry(entry, srv, helperDir, &warnings)
 			return entry, warnings, nil
 		}
 	}
@@ -327,11 +369,7 @@ func buildServerEntry(srv ServerPolicy, helperDir string, kc KeychainChecker) (m
 			for k, v := range entryHubSpot {
 				entry[k] = v
 			}
-			warn, err := attachToolPolicy(entry, srv)
-			if err != nil {
-				return nil, warnings, err
-			}
-			warnings = append(warnings, warn...)
+			finalizeServerEntry(entry, srv, helperDir, &warnings)
 			return entry, warnings, nil
 		}
 	}
@@ -359,12 +397,54 @@ func buildServerEntry(srv ServerPolicy, helperDir string, kc KeychainChecker) (m
 		}
 		entry["headersHelperTtlSec"] = ttl
 	}
-	warn, err := attachToolPolicy(entry, srv)
-	if err != nil {
-		return nil, warnings, err
-	}
-	warnings = append(warnings, warn...)
+	finalizeServerEntry(entry, srv, helperDir, &warnings)
 	return entry, warnings, nil
+}
+
+func finalizeServerEntry(entry map[string]interface{}, srv ServerPolicy, helperDir string, warnings *[]string) {
+	policy := mergeToolPolicy(srv.ToolPolicy, nil, false)
+	auto := strings.EqualFold(strings.TrimSpace(srv.ToolPolicyAuto), "readonly")
+	if auto {
+		url, _ := entry["url"].(string)
+		var headers map[string]string
+		if hp, _ := entry["headersHelper"].(string); hp != "" {
+			var err error
+			headers, err = authHeadersFromHelper(hp)
+			if err != nil {
+				*warnings = append(*warnings, fmt.Sprintf("[%s] tool_policy_auto: %v", srv.Name, err))
+			}
+		}
+		if tools, err := fetchMCPToolNames(url, headers); err != nil {
+			*warnings = append(*warnings, fmt.Sprintf("[%s] tool_policy_auto: could not fetch tools: %v", srv.Name, err))
+		} else {
+			policy = mergeToolPolicy(srv.ToolPolicy, tools, true)
+		}
+	}
+	if len(srv.ToolPolicy) > 0 {
+		warn, err := attachToolPolicy(entry, srv)
+		if err != nil {
+			*warnings = append(*warnings, fmt.Sprintf("[%s] tool_policy: %v", serverLabel(srv), err))
+		} else {
+			*warnings = append(*warnings, warn...)
+		}
+		return
+	}
+	applyToolPolicy(entry, policy)
+}
+
+func applyToolPolicy(entry map[string]interface{}, policy map[string]string) {
+	if len(policy) == 0 {
+		return
+	}
+	out := make(map[string]interface{}, len(policy))
+	for k, v := range policy {
+		if k = strings.TrimSpace(k); k != "" {
+			out[k] = strings.TrimSpace(v)
+		}
+	}
+	if len(out) > 0 {
+		entry["toolPolicy"] = out
+	}
 }
 
 func isSlackMCP(url string) bool {
@@ -519,6 +599,8 @@ func normalizeOAuthMap(m map[string]interface{}, url string, fallbackPort int, f
 			out["scope"] = v
 		case "callback_host", "callbackHost":
 			out["callbackHost"] = v
+		case "authorization_server", "authorizationServer":
+			out["authorizationServer"] = normalizeAuthorizationServer(v)
 		default:
 			out[k] = v
 		}
@@ -543,6 +625,34 @@ func normalizeOAuthMap(m map[string]interface{}, url string, fallbackPort int, f
 		}
 	}
 	return out
+}
+
+func normalizeAuthorizationServer(v interface{}) interface{} {
+	switch x := v.(type) {
+	case []interface{}:
+		out := make([]string, 0, len(x))
+		for _, item := range x {
+			if s, ok := item.(string); ok {
+				if s = strings.TrimSpace(s); s != "" {
+					out = append(out, s)
+				}
+			}
+		}
+		return out
+	case []string:
+		out := make([]string, 0, len(x))
+		for _, s := range x {
+			if s = strings.TrimSpace(s); s != "" {
+				out = append(out, s)
+			}
+		}
+		return out
+	case string:
+		if s := strings.TrimSpace(x); s != "" {
+			return []string{s}
+		}
+	}
+	return v
 }
 
 func resolveHelperBinary(name, dir string) string {

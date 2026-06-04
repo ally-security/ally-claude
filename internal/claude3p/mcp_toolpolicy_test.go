@@ -11,7 +11,7 @@ func TestMergeGmailToolPolicyExplicit(t *testing.T) {
 			"unlabel_message": "ask", "create_label": "ask", "update_label": "ask", "delete_label": "ask",
 		},
 	}
-	tp, _, err := mergeToolPolicy(srv)
+	tp, _, err := buildToolPolicyFromYAML(srv)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestMergeGmailUnlistedDefaultsAsk(t *testing.T) {
 		GoogleService: "gmail",
 		ToolPolicy:    map[string]string{"list_drafts": "allow"},
 	}
-	tp, _, err := mergeToolPolicy(srv)
+	tp, _, err := buildToolPolicyFromYAML(srv)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -276,8 +276,7 @@ func cmdClaudeSync(args []string) int {
 		fmt.Fprintln(os.Stderr, "usage: ally3p claude sync <policy.yaml> [--dry]")
 		return 2
 	}
-	if !dry && needsPrereqs(helperDir) {
-		fmt.Fprintln(os.Stderr, "missing google helper wrappers; running ally3p prereq ...")
+	if !dry {
 		if err := ensurePrereqs(helperDir); err != nil {
 			fmt.Fprintf(os.Stderr, "prereq failed: %v\n", err)
 			return 1
@@ -501,8 +500,9 @@ func printSyncLoginReminder(policy *claude3p.PolicyFile) {
 
 func printClaudeUsage() {
 	fmt.Fprint(os.Stderr, `Claude commands:
-  claude sync <policy.yaml>              Apply policy → configLibrary + Keychain (no browser OAuth)
-  claude sync <policy.yaml> --dry        Preview JSON (no writes)
+  claude sync <policy.yaml>              Apply policy → configLibrary + Keychain (runs prereq first)
+  claude sync <policy.yaml> --dry        Preview JSON (no writes, skips prereq)
+  claude sync <policy.yaml> --helper-dir ./bin
 
 Login (browser OAuth / tokens):
   claude login <policy.yaml>             Sign in to all OAuth services in policy

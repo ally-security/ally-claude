@@ -34,6 +34,7 @@ See [`example-policy.yaml`](example-policy.yaml) for the full policy schema.
 | Google Workspace | Custom OAuth + headersHelper | [docs/google-workspace.md](docs/google-workspace.md) |
 | Slack | Custom OAuth + headersHelper | [docs/slack.md](docs/slack.md) |
 | HubSpot | MCP Auth App + PKCE | [docs/hubspot.md](docs/hubspot.md) |
+| Ally docs (Mintlify) | Public MCP + `oauth: true` on `/authed/mcp` | `ally.yaml` |
 
 ## Commands
 

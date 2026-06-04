@@ -7,9 +7,9 @@ import (
 
 const toolPolicyDefaultUnlisted = "ask"
 
-// mergeToolPolicy builds configLibrary toolPolicy from ally.yaml tool_policy.
+// buildToolPolicyFromYAML builds configLibrary toolPolicy from ally.yaml tool_policy.
 // When sync knows the server's tool catalog, unlisted tools default to ask; YAML entries win.
-func mergeToolPolicy(srv ServerPolicy) (map[string]interface{}, []string, error) {
+func buildToolPolicyFromYAML(srv ServerPolicy) (map[string]interface{}, []string, error) {
 	if len(srv.ToolPolicy) == 0 {
 		return nil, nil, nil
 	}
@@ -66,7 +66,7 @@ func toolPolicyToInterface(m map[string]string) map[string]interface{} {
 }
 
 func attachToolPolicy(entry map[string]interface{}, srv ServerPolicy) ([]string, error) {
-	tp, warnings, err := mergeToolPolicy(srv)
+	tp, warnings, err := buildToolPolicyFromYAML(srv)
 	if err != nil {
 		return warnings, err
 	}

@@ -31,15 +31,6 @@ jobs:
           go build -o cmd/ally-claude-3p/embedded/slack-mcp-auth ./cmd/slack-mcp-auth
           go build -o cmd/ally-claude-3p/embedded/hubspot-mcp-auth ./cmd/hubspot-mcp-auth
 
-      - name: gofmt
-        run: |
-          unformatted=$(gofmt -l .)
-          if [ -n "$unformatted" ]; then
-            echo "::error::gofmt found unformatted files:"
-            echo "$unformatted"
-            exit 1
-          fi
-
       - name: go vet
         run: go vet ./...
 

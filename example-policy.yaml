@@ -6,6 +6,21 @@ inference:
 banner:
   enabled: false
 
+# Unrestricted web egress for Cowork/Code tool calls (WebFetch, package installs, etc.).
+egress:
+  allowed_hosts:
+    - "*"
+
+autoModeEnabled: true
+
+builtinToolPolicy:
+  WebFetch: allow
+  WebSearch: allow
+  Grep: allow
+  Glob: allow
+
+# tool_policy on each server — baked into configLibrary on sync (users only Connect, no re-sync).
+
 servers:
   - name: linear
     url: https://mcp.linear.app/mcp

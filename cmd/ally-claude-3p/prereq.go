@@ -61,22 +61,12 @@ func ensurePrereqs(targetDir string) error {
 	return nil
 }
 
-func needsPrereqs(helperDir string) bool {
-	dir, err := resolveInstallDir(helperDir)
-	if err != nil {
-		return true
-	}
-	for _, s := range googleServices {
-		if _, err := os.Stat(filepath.Join(dir, "google-workspace-mcp-auth-"+s)); err == nil {
-			return false
-		}
-	}
-	return true
-}
-
 func resolveInstallDir(override string) (string, error) {
 	if override != "" {
 		return override, nil
+	}
+	if exe, err := os.Executable(); err == nil {
+		return filepath.Dir(exe), nil
 	}
 	return "/usr/local/bin", nil
 }
