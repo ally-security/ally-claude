@@ -57,4 +57,11 @@ make build
 ./bin/ally3p prereq --dir ./bin
 ```
 
+For Team,
+
+```bash
+git checkout main && git pull origin main && make build && ./bin/ally3p claude sync ally.yaml
+// you might have to get latest ally.yaml from 1pass 
+```
+
 Releases ship **ally3p only**; helpers are embedded and extracted via `prereq`.
